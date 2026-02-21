@@ -4,6 +4,7 @@ import 'package:pdfrx_engine/pdfrx_engine.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'dart:async';
 
+import 'screens/splash_screen.dart';
 import 'screens/pdf_viewer_screen.dart';
 import 'screens/compress_pdf_screen.dart';
 import 'screens/convert_to_pdf_screen.dart';
@@ -121,8 +122,42 @@ class _OpenPDFToolsAppState extends State<OpenPDFToolsApp> {
       title: _appTitle,
       debugShowCheckedModeBanner: false,
       theme: AppConfig.getThemeData(),
-      home: const ResponsiveHomeScreen(),
+      home: const _SplashAndHomeWrapper(),
     );
+  }
+}
+
+/* ============= SPLASH AND HOME WRAPPER ============= */
+
+/// Manages splash screen display and transition to home screen
+class _SplashAndHomeWrapper extends StatefulWidget {
+  const _SplashAndHomeWrapper();
+
+  @override
+  State<_SplashAndHomeWrapper> createState() => _SplashAndHomeWrapperState();
+}
+
+class _SplashAndHomeWrapperState extends State<_SplashAndHomeWrapper> {
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showSplash = false;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showSplash) {
+      return const SplashScreen();
+    }
+    return const ResponsiveHomeScreen();
   }
 }
 
