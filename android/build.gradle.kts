@@ -1,30 +1,7 @@
-plugins {
-    id("org.gradle.toolchains.llvm-compiler") version "0.1.0" apply false
-}
-
 allprojects {
     repositories {
         google()
         mavenCentral()
-    }
-    
-    // Configure JVM toolchain for all projects
-    plugins.withId("com.android.application") {
-        configure<com.android.build.gradle.BaseExtension> {
-            compileOptions {
-                sourceCompatibility = JavaVersion.VERSION_11
-                targetCompatibility = JavaVersion.VERSION_11
-            }
-        }
-    }
-    
-    plugins.withId("com.android.library") {
-        configure<com.android.build.gradle.LibraryExtension> {
-            compileOptions {
-                sourceCompatibility = JavaVersion.VERSION_11
-                targetCompatibility = JavaVersion.VERSION_11
-            }
-        }
     }
 }
 
@@ -47,7 +24,7 @@ subprojects {
     plugins.withId("kotlin-android") {
         configure<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension> {
             compilerOptions {
-                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
             }
         }
     }
