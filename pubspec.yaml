@@ -62,7 +62,7 @@ dependencies:
   # Web & Desktop improvements
   url_launcher: ^6.2.6
   connectivity_plus: ^7.0.0
-  app_links: ^3.5.1
+  app_links: ^7.0.0
   
   # Icons including GitHub mark
   font_awesome_flutter: ^10.7.0
