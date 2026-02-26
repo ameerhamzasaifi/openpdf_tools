@@ -87,7 +87,7 @@ class PlatformFileHandler {
         return File(result.files.first.path ?? '');
       }
     } catch (e) {
-      print('File picker error: $e');
+      // File picker error handled silently
     }
     return null;
   }
@@ -112,7 +112,7 @@ class PlatformFileHandler {
             .toList();
       }
     } catch (e) {
-      print('File picker error: $e');
+      // File picker error handled silently
     }
     return [];
   }
@@ -149,19 +149,22 @@ class PlatformFileHandler {
         return true;
       }
     } catch (e) {
-      print('Failed to delete file: $e');
+      // Delete file error handled silently
     }
     return false;
   }
 
   /// Copy file to new location
-  static Future<File?> copyFile(String sourcePath, String destinationPath) async {
+  static Future<File?> copyFile(
+    String sourcePath,
+    String destinationPath,
+  ) async {
     try {
       final source = File(sourcePath);
       if (!await source.exists()) return null;
       return source.copy(destinationPath);
     } catch (e) {
-      print('Failed to copy file: $e');
+      // Copy file error handled silently
     }
     return null;
   }
@@ -176,7 +179,8 @@ class PlatformFileHandler {
       'png': 'image/png',
       'gif': 'image/gif',
       'doc': 'application/msword',
-      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'docx':
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     };
     return mimeTypes[extension] ?? 'application/octet-stream';
   }
@@ -201,7 +205,7 @@ class PlatformFileHandler {
         return 1024 * 1024 * 1024; // 1GB
       }
     } catch (e) {
-      print('Error getting storage space: $e');
+      // Storage space error handled silently
     }
     return 0;
   }
@@ -230,23 +234,11 @@ class FileOperationResult {
     this.error,
   });
 
-  factory FileOperationResult.success({
-    required String message,
-    File? file,
-  }) =>
-      FileOperationResult(
-        success: true,
-        message: message,
-        file: file,
-      );
+  factory FileOperationResult.success({required String message, File? file}) =>
+      FileOperationResult(success: true, message: message, file: file);
 
   factory FileOperationResult.failure({
     required String message,
     Exception? error,
-  }) =>
-      FileOperationResult(
-        success: false,
-        message: message,
-        error: error,
-      );
+  }) => FileOperationResult(success: false, message: message, error: error);
 }

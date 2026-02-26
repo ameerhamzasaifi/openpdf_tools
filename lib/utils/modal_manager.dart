@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:openpdf_tools/config/premium_theme.dart';
-import 'package:openpdf_tools/utils/animation_utils.dart';
+import 'package:openpdf_tools/widgets/premium_components.dart';
 
 /// Premium modal dialog manager with smooth animations
 class PremiumModalManager {
@@ -14,23 +14,11 @@ class PremiumModalManager {
     return showDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,
-      barrierColor: Colors.black.withOpacity(0.4),
-      transitionDuration: duration,
-      pageBuilder: (context, animation, secondaryAnimation) => child,
-      builder: (context) => FadeTransition(
-        opacity: animation,
-        child: ScaleTransition(
-          scale: animation.drive(
-            Tween(begin: 0.8, end: 1.0).chain(
-              CurveTween(curve: Curves.easeOutBack),
-            ),
-          ),
-          child: child,
-        ),
-      ),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (context) => child,
     );
   }
-  
+
   /// Show premium bottom sheet with slide animation
   static Future<T?> showPremiumBottomSheet<T>(
     BuildContext context, {
@@ -44,14 +32,10 @@ class PremiumModalManager {
       builder: builder,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.4),
-      transitionAnimationController: AnimationController(
-        duration: duration,
-        vsync: Navigator.of(context) as TickerProvider,
-      ),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
     );
   }
-  
+
   /// Show a premium snackbar
   static void showPremiumSnackBar(
     BuildContext context, {
@@ -60,13 +44,11 @@ class PremiumModalManager {
     Duration duration = const Duration(seconds: 3),
     VoidCallback? onDismiss,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     ScaffoldMessenger.of(context).clearSnackBars();
-    
+
     Color backgroundColor;
     IconData icon;
-    
+
     switch (type) {
       case SnackBarType.success:
         backgroundColor = PremiumColors.success;
@@ -85,7 +67,7 @@ class PremiumModalManager {
         icon = Icons.info_rounded;
         break;
     }
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -112,17 +94,12 @@ class PremiumModalManager {
         margin: const EdgeInsets.all(PremiumSpacing.lg),
       ),
     );
-    
+
     onDismiss?.call();
   }
 }
 
-enum SnackBarType {
-  success,
-  error,
-  warning,
-  info,
-}
+enum SnackBarType { success, error, warning, info }
 
 /// Premium alert dialog with smooth animations
 class PremiumAlertDialog extends StatelessWidget {
@@ -133,9 +110,9 @@ class PremiumAlertDialog extends StatelessWidget {
   final VoidCallback? onConfirm;
   final VoidCallback? onCancel;
   final Color? confirmButtonColor;
-  
+
   const PremiumAlertDialog({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     this.confirmLabel = 'Confirm',
@@ -143,12 +120,12 @@ class PremiumAlertDialog extends StatelessWidget {
     this.onConfirm,
     this.onCancel,
     this.confirmButtonColor,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
@@ -159,7 +136,7 @@ class PremiumAlertDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(PremiumSpacing.radiusLg),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -221,41 +198,37 @@ class PremiumAlertDialog extends StatelessWidget {
   }
 }
 
-// Imports for button components
-import 'package:openpdf_tools/widgets/premium_components.dart';
-
 /// Premium bottom sheet wrapper
 class PremiumBottomSheet extends StatelessWidget {
   final String? title;
   final Widget child;
   final VoidCallback? onClose;
-  
+
   const PremiumBottomSheet({
-    Key? key,
+    super.key,
     this.title,
     required this.child,
     this.onClose,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return AnimatedBuilder(
-      animation: ModalRoute.of(context)?.animation ??
-          AlwaysStoppedAnimation(1.0),
+      animation:
+          ModalRoute.of(context)?.animation ?? AlwaysStoppedAnimation(1.0),
       builder: (context, child) {
         return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(
-              parent: ModalRoute.of(context)?.animation ??
-                  AlwaysStoppedAnimation(1.0),
-              curve: Curves.easeOut,
-            ),
-          ),
+          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+              .animate(
+                CurvedAnimation(
+                  parent:
+                      ModalRoute.of(context)?.animation ??
+                      AlwaysStoppedAnimation(1.0),
+                  curve: Curves.easeOut,
+                ),
+              ),
           child: child,
         );
       },
@@ -269,7 +242,7 @@ class PremiumBottomSheet extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -349,16 +322,13 @@ class PremiumBottomSheet extends StatelessWidget {
 /// Premium loading dialog
 class PremiumLoadingDialog extends StatelessWidget {
   final String? message;
-  
-  const PremiumLoadingDialog({
-    Key? key,
-    this.message,
-  }) : super(key: key);
-  
+
+  const PremiumLoadingDialog({super.key, this.message});
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
@@ -376,8 +346,9 @@ class PremiumLoadingDialog extends StatelessWidget {
               width: 50,
               height: 50,
               child: CircularProgressIndicator(
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(PremiumColors.luxuryRed),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  PremiumColors.luxuryRed,
+                ),
                 strokeWidth: 3,
               ),
             ),

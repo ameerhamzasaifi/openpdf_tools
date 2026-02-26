@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "pdf_opener_handler.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -26,6 +27,24 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
+
+  // Set up method channel for PDF opener
+  auto engine = flutter_controller_->engine();
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel =
+      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          engine->messenger(), "com.openpdf.tools/pdfOpener",
+          &flutter::StandardMethodCodec::GetInstance());
+  
+  channel->SetMethodCallHandler(
+      [](const flutter::MethodCall<flutter::EncodableValue>& call,
+         std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() == "registerPdfOpener") {
+          bool success = PDFOpenerHandler::RegisterPdfOpener();
+          result->Success(flutter::EncodableValue(success));
+        } else {
+          result->NotImplemented();
+        }
+      });
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();

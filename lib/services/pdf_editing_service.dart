@@ -21,8 +21,7 @@ class PdfEditingService {
       await inputFile.copy(outputFile.path);
 
       // Create metadata file
-      final metaFile =
-          File('${outputFile.path}.meta');
+      final metaFile = File('${outputFile.path}.meta');
       await metaFile.writeAsString(
         'operation: text\ntext_content: $text\nfont_size: $fontSize\ncreated_at: ${DateTime.now()}',
       );
@@ -33,7 +32,7 @@ class PdfEditingService {
     }
   }
 
-  /// Rotate PDF  
+  /// Rotate PDF
   static Future<String> rotatePdf({
     required String inputPath,
     required int angle,
@@ -49,7 +48,7 @@ class PdfEditingService {
       // Create metadata file
       final metaFile = File('$outputPath.meta');
       await metaFile.writeAsString(
-        'operation: rotate\nangle: ${angle}°\ncreated_at: ${DateTime.now()}',
+        'operation: rotate\nangle: $angle°\ncreated_at: ${DateTime.now()}',
       );
 
       return outputPath;

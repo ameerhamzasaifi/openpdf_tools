@@ -10,12 +10,12 @@ class AdaptiveNavigation extends StatefulWidget {
   final List<NavigationItem> items;
 
   const AdaptiveNavigation({
-    Key? key,
+    super.key,
     required this.child,
     required this.onNavigationChanged,
     this.selectedIndex = 0,
     required this.items,
-  }) : super(key: key);
+  });
 
   @override
   State<AdaptiveNavigation> createState() => _AdaptiveNavigationState();
@@ -44,11 +44,13 @@ class _AdaptiveNavigationState extends State<AdaptiveNavigation> {
         onTap: widget.onNavigationChanged,
         type: BottomNavigationBarType.fixed,
         items: widget.items
-            .map((item) => BottomNavigationBarItem(
-                  icon: Icon(item.icon),
-                  label: item.label,
-                  tooltip: item.tooltip,
-                ))
+            .map(
+              (item) => BottomNavigationBarItem(
+                icon: Icon(item.icon),
+                label: item.label,
+                tooltip: item.tooltip,
+              ),
+            )
             .toList(),
       ),
     );
@@ -99,9 +101,9 @@ class _AdaptiveNavigationState extends State<AdaptiveNavigation> {
             child: Text(
               'OpenPDF Tools',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -131,18 +133,16 @@ class _AdaptiveNavigationState extends State<AdaptiveNavigation> {
     required bool isSelected,
   }) {
     return Material(
-      color: isSelected ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
+      color: isSelected
+          ? Colors.white.withValues(alpha: 0.15)
+          : Colors.transparent,
       child: InkWell(
         onTap: () => widget.onNavigationChanged(index),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(
-                item.icon,
-                color: Colors.white,
-                size: 24,
-              ),
+              Icon(item.icon, color: Colors.white, size: 24),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
@@ -150,7 +150,9 @@ class _AdaptiveNavigationState extends State<AdaptiveNavigation> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -186,12 +188,12 @@ class AdaptiveDialog extends StatelessWidget {
   final bool barrierDismissible;
 
   const AdaptiveDialog({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     required this.actions,
     this.barrierDismissible = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -206,13 +208,15 @@ class AdaptiveDialog extends StatelessWidget {
       title: Text(title),
       content: Text(message),
       actions: actions
-          .map((action) => TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(action.value);
-                  action.onPressed?.call();
-                },
-                child: Text(action.label),
-              ))
+          .map(
+            (action) => TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(action.value);
+                action.onPressed?.call();
+              },
+              child: Text(action.label),
+            ),
+          )
           .toList(),
     );
   }
@@ -238,21 +242,20 @@ class AdaptiveDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-              ),
+              Text(message, textAlign: TextAlign.center),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: actions
-                    .map((action) => TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop(action.value);
-                            action.onPressed?.call();
-                          },
-                          child: Text(action.label),
-                        ))
+                    .map(
+                      (action) => TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(action.value);
+                          action.onPressed?.call();
+                        },
+                        child: Text(action.label),
+                      ),
+                    )
                     .toList(),
               ),
             ],
@@ -287,20 +290,22 @@ class AdaptiveButton extends StatelessWidget {
   final bool isDestructive;
 
   const AdaptiveButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.isLoading = false,
     this.icon,
     this.isDestructive = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final button = ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: isDestructive ? Colors.red : Theme.of(context).primaryColor,
+        backgroundColor: isDestructive
+            ? Colors.red
+            : Theme.of(context).primaryColor,
         padding: EdgeInsets.symmetric(
           horizontal: context.responsive.screenWidth * 0.15,
           vertical: 12,
@@ -318,10 +323,7 @@ class AdaptiveButton extends StatelessWidget {
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (icon != null) ...[
-                  Icon(icon),
-                  const SizedBox(width: 8),
-                ],
+                if (icon != null) ...[Icon(icon), const SizedBox(width: 8)],
                 Text(label),
               ],
             ),

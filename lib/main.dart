@@ -1,7 +1,11 @@
-import 'dart:io';
+import 'dart:io' show File;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pdfrx_engine/pdfrx_engine.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
 
 import 'screens/splash_screen.dart';
@@ -12,23 +16,32 @@ import 'screens/convert_from_pdf_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/edit_pdf_screen.dart';
 import 'screens/pdf_from_images_screen.dart';
+import 'screens/dashboard_home_screen.dart';
+
+// Import widgets
+import 'widgets/theme_switcher.dart';
+import 'widgets/modern_navigation.dart';
 
 // Import app configuration
 import 'config/app_config.dart';
+import 'config/premium_theme.dart';
 
 // Import optimization utilities
 import 'utils/platform_helper.dart';
 import 'utils/platform_file_handler.dart';
 import 'utils/responsive_helper.dart';
 
+// Import services
+import 'services/pdf_opener_service.dart';
+import 'services/theme_service.dart' as theme_service;
+
 // Constants for app configuration
 const String _appTitle = AppConfig.appTitle;
 const Color _primaryColor = AppConfig.primaryColor;
-const Color _darkRedColor = AppConfig.darkRedColor;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Platform-specific initialization
   if (PlatformHelper.isDesktop) {
     // Initialize desktop-specific features
@@ -38,13 +51,35 @@ Future<void> main() async {
       debugPrint('PDFRx initialization failed: $e');
     }
   }
-  
+
   // Request permissions for mobile
   if (PlatformHelper.isMobile) {
     await PlatformFileHandler.requestFilePermissions();
   }
-  
-  runApp(const OpenPDFToolsApp());
+
+  // Initialize theme service
+  final themeService = theme_service.ThemeService();
+  await themeService.initialize();
+
+  // Initialize PDF opener service for handling system PDF opening
+  _initializePDFOpener();
+
+  runApp(
+    ChangeNotifierProvider<theme_service.ThemeService>.value(
+      value: themeService,
+      child: const OpenPDFToolsApp(),
+    ),
+  );
+}
+
+/// Initialize the PDF opener service to handle system file opening
+void _initializePDFOpener() {
+  try {
+    // This will be set to the actual handler in the app state
+    debugPrint('PDF opener service initialized');
+  } catch (e) {
+    debugPrint('Failed to initialize PDF opener: $e');
+  }
 }
 
 class OpenPDFToolsApp extends StatefulWidget {
@@ -59,17 +94,35 @@ class OpenPDFToolsApp extends StatefulWidget {
 }
 
 class _OpenPDFToolsAppState extends State<OpenPDFToolsApp> {
-  final GlobalKey<NavigatorState> _navigatorKey =
-      GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
+  late PDFOpenerService _pdfOpenerService;
 
   @override
   void initState() {
     super.initState();
 
+    // Initialize PDF opener service
+    _pdfOpenerService = PDFOpenerService();
+    _pdfOpenerService.initialize(onPdfFileReceived: _handlePdfFileFromSystem);
+
     // Share intents only exist on Android
-    if (Platform.isAndroid) {
+    if (!kIsWeb && PlatformHelper.isAndroid) {
       _initAndroidShareHandling();
+    }
+  }
+
+  /// Handle PDF files opened through the system "Open with" dialog
+  void _handlePdfFileFromSystem(String filePath) {
+    debugPrint('PDF file received from system: $filePath');
+
+    final file = File(filePath);
+    if (file.existsSync() && filePath.toLowerCase().endsWith('.pdf')) {
+      _navigatorKey.currentState?.push(
+        MaterialPageRoute(builder: (_) => PdfViewerScreen(externalFile: file)),
+      );
+    } else {
+      debugPrint('File does not exist or is not a PDF: $filePath');
     }
   }
 
@@ -79,12 +132,12 @@ class _OpenPDFToolsAppState extends State<OpenPDFToolsApp> {
   /// warm start (app running in background) file sharing intents.
   void _initAndroidShareHandling() {
     // Cold start
-    ReceiveSharingIntent.instance.getInitialMedia()
-      .then(_handleIncomingFiles);
+    ReceiveSharingIntent.instance.getInitialMedia().then(_handleIncomingFiles);
 
     // Warm start: keep subscription to cancel on dispose
-    _intentSub = ReceiveSharingIntent.instance.getMediaStream()
-      .listen(_handleIncomingFiles);
+    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
+      _handleIncomingFiles,
+    );
   }
 
   /// Process incoming shared files and navigate to viewer if PDF.
@@ -99,31 +152,48 @@ class _OpenPDFToolsAppState extends State<OpenPDFToolsApp> {
 
     _navigatorKey.currentState?.push(
       MaterialPageRoute(
-        builder: (_) => PdfViewerScreen(
-          externalFile: File(file.path),
-        ),
+        builder: (_) => PdfViewerScreen(externalFile: File(file.path)),
       ),
     );
   }
 
   @override
   void dispose() {
-    if (Platform.isAndroid) {
+    if (!kIsWeb && PlatformHelper.isAndroid) {
       _intentSub?.cancel();
       ReceiveSharingIntent.instance.reset();
     }
+    _pdfOpenerService.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
-      title: _appTitle,
-      debugShowCheckedModeBanner: false,
-      theme: AppConfig.getThemeData(),
-      home: const _SplashAndHomeWrapper(),
+    return Consumer<theme_service.ThemeService>(
+      builder: (context, themeService, _) {
+        return MaterialApp(
+          navigatorKey: _navigatorKey,
+          title: _appTitle,
+          debugShowCheckedModeBanner: false,
+          theme: createLightTheme(),
+          darkTheme: createDarkTheme(),
+          themeMode: _convertThemeMode(themeService),
+          home: const _SplashAndHomeWrapper(),
+        );
+      },
     );
+  }
+
+  /// Convert custom ThemeMode to Material ThemeMode
+  ThemeMode _convertThemeMode(theme_service.ThemeService themeService) {
+    switch (themeService.themeMode) {
+      case theme_service.ThemeMode.light:
+        return ThemeMode.light;
+      case theme_service.ThemeMode.dark:
+        return ThemeMode.dark;
+      case theme_service.ThemeMode.system:
+        return ThemeMode.system;
+    }
   }
 }
 
@@ -173,54 +243,60 @@ class ResponsiveHomeScreen extends StatefulWidget {
 class _ResponsiveHomeScreenState extends State<ResponsiveHomeScreen> {
   int _selectedIndex = 0;
 
-  final List<NavigationItemConfig> _navigationItems = [
-    NavigationItemConfig(
-      icon: Icons.home,
-      label: 'Home',
-      screen: const HomeScreen(),
-    ),
-    NavigationItemConfig(
-      icon: Icons.picture_as_pdf,
-      label: 'View PDF',
-      screen: const PdfViewerScreen(),
-    ),
-    NavigationItemConfig(
-      icon: Icons.compress,
-      label: 'Compress',
-      screen: const CompressPdfScreen(),
-    ),
-    NavigationItemConfig(
-      icon: Icons.history,
-      label: 'History',
-      screen: const HistoryScreen(),
-    ),
-    NavigationItemConfig(
-      icon: Icons.file_present,
-      label: 'Convert to PDF',
-      screen: const ConvertToPdfScreen(),
-    ),
-    NavigationItemConfig(
-      icon: Icons.transform,
-      label: 'Convert from PDF',
-      screen: const ConvertFromPdfScreen(),
-    ),
-    NavigationItemConfig(
-      icon: Icons.edit,
-      label: 'Edit PDF',
-      screen: const EditPdfScreen(),
-    ),
-    NavigationItemConfig(
-      icon: Icons.image,
-      label: 'PDF from Images',
-      screen: const PdfFromImagesScreen(),
-    ),
-  ];
+  late List<ModernNavigationItem> _navigationItems;
+
+  @override
+  void initState() {
+    super.initState();
+    _navigationItems = [
+      ModernNavigationItem(
+        icon: Icons.home,
+        label: 'Home',
+        screen: const DashboardHomeScreen(),
+      ),
+      ModernNavigationItem(
+        icon: Icons.picture_as_pdf,
+        label: 'View PDF',
+        screen: const PdfViewerScreen(),
+      ),
+      ModernNavigationItem(
+        icon: Icons.compress,
+        label: 'Compress',
+        screen: const CompressPdfScreen(),
+      ),
+      ModernNavigationItem(
+        icon: Icons.history,
+        label: 'History',
+        screen: const HistoryScreen(),
+      ),
+      ModernNavigationItem(
+        icon: Icons.file_present,
+        label: 'Convert to PDF',
+        screen: const ConvertToPdfScreen(),
+      ),
+      ModernNavigationItem(
+        icon: Icons.transform,
+        label: 'Convert from PDF',
+        screen: const ConvertFromPdfScreen(),
+      ),
+      ModernNavigationItem(
+        icon: Icons.edit,
+        label: 'Edit PDF',
+        screen: const EditPdfScreen(),
+      ),
+      ModernNavigationItem(
+        icon: Icons.image,
+        label: 'PDF from Images',
+        screen: const PdfFromImagesScreen(),
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = context.isMobile;
     final isTablet = context.isTablet;
-    
+
     if (isMobile) {
       return _buildMobileLayout();
     } else if (isTablet) {
@@ -233,16 +309,10 @@ class _ResponsiveHomeScreenState extends State<ResponsiveHomeScreen> {
   Widget _buildMobileLayout() {
     return Scaffold(
       body: _navigationItems[_selectedIndex].screen,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType.fixed,
-        items: _navigationItems
-            .map((item) => BottomNavigationBarItem(
-                  icon: Icon(item.icon),
-                  label: item.label,
-                ))
-            .toList(),
+      bottomNavigationBar: ModernBottomNavigation(
+        selectedIndex: _selectedIndex,
+        onIndexChanged: (index) => setState(() => _selectedIndex = index),
+        items: _navigationItems,
       ),
     );
   }
@@ -251,38 +321,31 @@ class _ResponsiveHomeScreenState extends State<ResponsiveHomeScreen> {
     return Scaffold(
       body: Row(
         children: [
-          // Side navigation
-          Container(
-            width: 250,
-            color: _primaryColor,
-            child: Column(
+          ModernNavigationRail(
+            selectedIndex: _selectedIndex,
+            onIndexChanged: (index) => setState(() => _selectedIndex = index),
+            items: _navigationItems,
+            header: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    _appTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                SizedBox(
+                  height: 40,
+                  width: 40,
+                  child: Image.asset(
+                    'asset/app_img/OpenPDF Tools.png',
+                    fit: BoxFit.contain,
                   ),
                 ),
-                const Divider(color: Colors.white30),
-                Expanded(
-                  child: ListView(
-                    children: List.generate(
-                      _navigationItems.length,
-                      (index) => _buildNavItem(index),
-                    ),
-                  ),
+                const SizedBox(height: 8),
+                const Text(
+                  _appTitle,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
+            footer: ThemeSwitcher(compact: true),
           ),
-          // Main content
-          Expanded(
-            child: _navigationItems[_selectedIndex].screen,
-          ),
+          Expanded(child: _navigationItems[_selectedIndex].screen),
         ],
       ),
     );
@@ -292,98 +355,66 @@ class _ResponsiveHomeScreenState extends State<ResponsiveHomeScreen> {
     return Scaffold(
       body: Row(
         children: [
-          // Side navigation
-          Container(
-            width: 280,
-            color: _primaryColor,
-            child: Column(
+          ModernNavigationRail(
+            selectedIndex: _selectedIndex,
+            onIndexChanged: (index) => setState(() => _selectedIndex = index),
+            items: _navigationItems,
+            header: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    _appTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
+                SizedBox(
+                  height: 48,
+                  width: 48,
+                  child: Image.asset(
+                    'asset/app_img/OpenPDF Tools.png',
+                    fit: BoxFit.contain,
                   ),
                 ),
-                const Divider(color: Colors.white30),
-                Expanded(
-                  child: ListView(
-                    children: List.generate(
-                      _navigationItems.length,
-                      (index) => _buildNavItem(index),
-                    ),
+                const SizedBox(height: 12),
+                Text(
+                  _appTitle,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
+            footer: ThemeSwitcher(compact: true),
           ),
-          // Main content
-          Expanded(
-            child: _navigationItems[_selectedIndex].screen,
-          ),
+          Expanded(child: _navigationItems[_selectedIndex].screen),
         ],
       ),
     );
   }
-
-  Widget _buildNavItem(int index) {
-    final item = _navigationItems[index];
-    final isSelected = _selectedIndex == index;
-    
-    return Material(
-      color: isSelected ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
-      child: InkWell(
-        onTap: () => setState(() => _selectedIndex = index),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Icon(item.icon, color: Colors.white),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  item.label,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class NavigationItemConfig {
-  final IconData icon;
-  final String label;
-  final Widget screen;
-
-  NavigationItemConfig({
-    required this.icon,
-    required this.label,
-    required this.screen,
-  });
 }
 
 /* ============= HOME SCREEN ============= */
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Future<void> _launchGitHub() async {
+    try {
+      if (await canLaunchUrl(Uri.parse(AppConfig.githubUrl))) {
+        await launchUrl(Uri.parse(AppConfig.githubUrl));
+      }
+    } catch (e) {
+      debugPrint('Error launching GitHub URL: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = context.isMobile;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
-    
+    // final screenWidth = MediaQuery.of(context).size.width;
+
     // Dynamic grid columns based on screen size
     int gridColumns = 2;
     if (context.isDesktop) {
@@ -391,7 +422,7 @@ class HomeScreen extends StatelessWidget {
     } else if (context.isTablet) {
       gridColumns = 3;
     }
-    
+
     final tools = [
       ToolCardData(
         icon: Icons.picture_as_pdf,
@@ -443,163 +474,167 @@ class HomeScreen extends StatelessWidget {
         screen: const PdfFromImagesScreen(),
       ),
     ];
-    
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Modern AppBar with Hero Header
-          SliverAppBar(
-            expandedHeight: isMobile ? 160 : 200,
-            floating: false,
-            pinned: true,
-            backgroundColor: _primaryColor,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFC6302C),
-                      Color(0xFF9A0000),
-                    ],
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: isMobile ? 60 : 80,
-                      height: isMobile ? 60 : 80,
-                      child: Image.asset(
-                        'asset/app_img/OpenPDF Tools.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _appTitle,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: isMobile ? 18 : 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Professional PDF Management',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: isMobile ? 11 : 13,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
+
+    return CustomScrollView(
+      slivers: [
+        // Modern AppBar with Hero Header
+        SliverAppBar(
+          expandedHeight: isMobile ? 160 : 200,
+          floating: false,
+          pinned: true,
+          backgroundColor: _primaryColor,
+          elevation: 0,
+          flexibleSpace: FlexibleSpaceBar(
+            background: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFC6302C), Color(0xFF9A0000)],
                 ),
               ),
-              titlePadding: const EdgeInsets.symmetric(vertical: 16),
-              title: const Text(
-                _appTitle,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          // Content Grid with responsive layout
-          SliverPadding(
-            padding: EdgeInsets.all(isMobile ? 12 : 16),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: gridColumns,
-                childAspectRatio: 0.95,
-                crossAxisSpacing: isMobile ? 8 : 12,
-                mainAxisSpacing: isMobile ? 8 : 12,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => _ToolCard(
-                  tool: tools[index],
-                  isMobile: isMobile,
-                ),
-                childCount: tools.length,
-              ),
-            ),
-          ),
-          // Footer Info
-          SliverPadding(
-            padding: EdgeInsets.all(isMobile ? 12 : 16),
-            sliver: SliverToBoxAdapter(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: EdgeInsets.all(isMobile ? 12 : 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                color: _primaryColor.withValues(alpha: 0.1),
-                              ),
-                              child: const Icon(
-                                Icons.info,
-                                color: _primaryColor,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(
-                              child: Text(
-                                'Features',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          '✓ Multi-format support\n'
-                          '✓ Fast & secure processing\n'
-                          '✓ Optimized for all platforms\n'
-                          '✓ Responsive design',
-                          style: TextStyle(
-                            fontSize: 12,
-                            height: 1.8,
-                          ),
-                        ),
-                      ],
+                  SizedBox(
+                    width: isMobile ? 60 : 80,
+                    height: isMobile ? 60 : 80,
+                    child: Image.asset(
+                      'asset/app_img/OpenPDF Tools.png',
+                      fit: BoxFit.contain,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
                   Text(
-                    'Version ${AppConfig.appVersion}',
+                    _appTitle,
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: Colors.white,
+                      fontSize: isMobile ? 18 : 24,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Professional PDF Management',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: isMobile ? 11 : 13,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                 ],
               ),
             ),
+            titlePadding: const EdgeInsets.symmetric(vertical: 16),
+            title: const Text(
+              _appTitle,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
           ),
-        ],
-      ),
+        ),
+        // Content Grid with responsive layout
+        SliverPadding(
+          padding: EdgeInsets.all(isMobile ? 12 : 16),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: gridColumns,
+              childAspectRatio: 0.95,
+              crossAxisSpacing: isMobile ? 8 : 12,
+              mainAxisSpacing: isMobile ? 8 : 12,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) =>
+                  _ToolCard(tool: tools[index], isMobile: isMobile),
+              childCount: tools.length,
+            ),
+          ),
+        ),
+        // Footer Info
+        SliverPadding(
+          padding: EdgeInsets.all(isMobile ? 12 : 16),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(isMobile ? 12 : 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: _primaryColor.withValues(alpha: 0.1),
+                            ),
+                            child: const Icon(
+                              Icons.info,
+                              color: _primaryColor,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Features',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        '✓ Multi-format support\n'
+                        '✓ Fast & secure processing\n'
+                        '✓ Optimized for all platforms\n'
+                        '✓ Responsive design',
+                        style: TextStyle(fontSize: 12, height: 1.8),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Version ${AppConfig.appVersion}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 16),
+                // GitHub Icon Link
+                GestureDetector(
+                  onTap: _launchGitHub,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _primaryColor.withValues(alpha: 0.1),
+                    ),
+                    child: const Icon(
+                      FontAwesomeIcons.github,
+                      color: _primaryColor,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -625,10 +660,7 @@ class _ToolCard extends StatefulWidget {
   final ToolCardData tool;
   final bool isMobile;
 
-  const _ToolCard({
-    required this.tool,
-    required this.isMobile,
-  });
+  const _ToolCard({required this.tool, required this.isMobile});
 
   @override
   State<_ToolCard> createState() => _ToolCardState();
@@ -655,7 +687,9 @@ class _ToolCardState extends State<_ToolCard> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: widget.tool.color.withValues(alpha: _isHovered ? 0.3 : 0.15),
+                color: widget.tool.color.withValues(
+                  alpha: _isHovered ? 0.3 : 0.15,
+                ),
                 blurRadius: _isHovered ? 16 : 8,
                 offset: Offset(0, _isHovered ? 8 : 4),
               ),

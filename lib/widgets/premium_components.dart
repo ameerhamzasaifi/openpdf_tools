@@ -12,9 +12,9 @@ class PremiumButton extends StatefulWidget {
   final IconData? icon;
   final bool fullWidth;
   final EdgeInsets padding;
-  
+
   const PremiumButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.isLoading = false,
@@ -24,8 +24,8 @@ class PremiumButton extends StatefulWidget {
       horizontal: PremiumSpacing.lg,
       vertical: PremiumSpacing.md,
     ),
-  }) : super(key: key);
-  
+  });
+
   @override
   State<PremiumButton> createState() => _PremiumButtonState();
 }
@@ -42,7 +42,7 @@ class _PremiumButtonState extends State<PremiumButton> {
           gradient: LinearGradient(
             colors: [
               PremiumColors.luxuryRed,
-              PremiumColors.luxuryRed.withOpacity(0.9),
+              PremiumColors.luxuryRed.withValues(alpha: 0.9),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -50,7 +50,7 @@ class _PremiumButtonState extends State<PremiumButton> {
           borderRadius: BorderRadius.circular(PremiumSpacing.radiusMd),
           boxShadow: [
             BoxShadow(
-              color: PremiumColors.luxuryRed.withOpacity(0.3),
+              color: PremiumColors.luxuryRed.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -68,8 +68,7 @@ class _PremiumButtonState extends State<PremiumButton> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         strokeWidth: 2,
                       ),
                     )
@@ -86,8 +85,9 @@ class _PremiumButtonState extends State<PremiumButton> {
                         ],
                         Text(
                           widget.label,
-                          style: PremiumTypography.labelLarge
-                              .copyWith(color: Colors.white),
+                          style: PremiumTypography.labelLarge.copyWith(
+                            color: Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -105,19 +105,19 @@ class PremiumOutlinedButton extends StatelessWidget {
   final VoidCallback onPressed;
   final IconData? icon;
   final bool fullWidth;
-  
+
   const PremiumOutlinedButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.icon,
     this.fullWidth = false,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return ButtonAnimations.scaleOnPress(
       onPressed: onPressed,
       child: Container(
@@ -137,8 +137,8 @@ class PremiumOutlinedButton extends StatelessWidget {
           child: InkWell(
             onTap: onPressed,
             borderRadius: BorderRadius.circular(PremiumSpacing.radiusMd),
-            splashColor: PremiumColors.luxuryRed.withOpacity(0.1),
-            highlightColor: PremiumColors.luxuryRed.withOpacity(0.05),
+            splashColor: PremiumColors.luxuryRed.withValues(alpha: 0.1),
+            highlightColor: PremiumColors.luxuryRed.withValues(alpha: 0.05),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: PremiumSpacing.lg,
@@ -157,8 +157,9 @@ class PremiumOutlinedButton extends StatelessWidget {
                   ],
                   Text(
                     label,
-                    style: PremiumTypography.labelLarge
-                        .copyWith(color: PremiumColors.luxuryRed),
+                    style: PremiumTypography.labelLarge.copyWith(
+                      color: PremiumColors.luxuryRed,
+                    ),
                   ),
                 ],
               ),
@@ -180,58 +181,48 @@ class PremiumCard extends StatelessWidget {
   final Color? backgroundColor;
   final double? elevation;
   final bool enableGlassmorphism;
-  
+
   const PremiumCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding = const EdgeInsets.all(PremiumSpacing.lg),
     this.onTap,
     this.backgroundColor,
     this.elevation,
     this.enableGlassmorphism = false,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = backgroundColor ??
+    final bgColor =
+        backgroundColor ??
         (isDark
             ? PremiumColors.darkSurfaceSecondary
             : PremiumColors.lightSurfacePrimary);
-    
+
     final cardContent = Container(
       decoration: BoxDecoration(
-        color: enableGlassmorphism
-            ? bgColor.withOpacity(0.8)
-            : bgColor,
+        color: enableGlassmorphism ? bgColor.withValues(alpha: 0.8) : bgColor,
         borderRadius: BorderRadius.circular(PremiumSpacing.radiusLg),
         border: enableGlassmorphism
-            ? Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1.5,
-              )
+            ? Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5)
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
             blurRadius: enableGlassmorphism ? 20 : 8,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Padding(
-        padding: padding,
-        child: child,
-      ),
+      child: Padding(padding: padding, child: child),
     );
-    
+
     if (onTap != null) {
-      return CardAnimations.elevationOnTap(
-        onTap: onTap!,
-        child: cardContent,
-      );
+      return CardAnimations.elevationOnTap(onTap: onTap!, child: cardContent);
     }
-    
+
     return cardContent;
   }
 }
@@ -242,18 +233,15 @@ class PremiumGradientCard extends StatelessWidget {
   final EdgeInsets padding;
   final List<Color> colors;
   final VoidCallback? onTap;
-  
+
   const PremiumGradientCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding = const EdgeInsets.all(PremiumSpacing.lg),
-    this.colors = const [
-      PremiumColors.luxuryRed,
-      Color(0xFFE94B3C),
-    ],
+    this.colors = const [PremiumColors.luxuryRed, Color(0xFFE94B3C)],
     this.onTap,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     final cardContent = Container(
@@ -266,25 +254,19 @@ class PremiumGradientCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(PremiumSpacing.radiusLg),
         boxShadow: [
           BoxShadow(
-            color: colors.first.withOpacity(0.4),
+            color: colors.first.withValues(alpha: 0.4),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Padding(
-        padding: padding,
-        child: child,
-      ),
+      child: Padding(padding: padding, child: child),
     );
-    
+
     if (onTap != null) {
-      return CardAnimations.elevationOnTap(
-        onTap: onTap!,
-        child: cardContent,
-      );
+      return CardAnimations.elevationOnTap(onTap: onTap!, child: cardContent);
     }
-    
+
     return cardContent;
   }
 }
@@ -303,9 +285,9 @@ class PremiumTextField extends StatefulWidget {
   final VoidCallback? onSuffixTap;
   final String? Function(String?)? validator;
   final bool obscureText;
-  
+
   const PremiumTextField({
-    Key? key,
+    super.key,
     required this.label,
     this.hint,
     this.controller,
@@ -316,8 +298,8 @@ class PremiumTextField extends StatefulWidget {
     this.onSuffixTap,
     this.validator,
     this.obscureText = false,
-  }) : super(key: key);
-  
+  });
+
   @override
   State<PremiumTextField> createState() => _PremiumTextFieldState();
 }
@@ -326,7 +308,7 @@ class _PremiumTextFieldState extends State<PremiumTextField>
     with SingleTickerProviderStateMixin {
   late AnimationController _focusController;
   late Animation<double> _focusAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -334,21 +316,20 @@ class _PremiumTextFieldState extends State<PremiumTextField>
       duration: AnimationUtils.fast,
       vsync: this,
     );
-    
-    _focusAnimation =
-        Tween<double>(begin: 0, end: 1).animate(_focusController);
+
+    _focusAnimation = Tween<double>(begin: 0, end: 1).animate(_focusController);
   }
-  
+
   @override
   void dispose() {
     _focusController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return AnimatedBuilder(
       animation: _focusAnimation,
       builder: (context, child) {
@@ -368,57 +349,65 @@ class _PremiumTextFieldState extends State<PremiumTextField>
               ),
             ),
             const SizedBox(height: PremiumSpacing.sm),
-            TextField(
-              controller: widget.controller,
-              keyboardType: widget.keyboardType,
-              maxLines: widget.obscureText ? 1 : widget.maxLines,
-              obscureText: widget.obscureText,
-              onFocus: () {
-                _focusController.forward();
+            Focus(
+              onFocusChange: (hasFocus) {
+                if (hasFocus) {
+                  _focusController.forward();
+                } else {
+                  _focusController.reverse();
+                }
               },
-              decoration: InputDecoration(
-                hintText: widget.hint,
-                prefixIcon: widget.prefixIcon != null
-                    ? Icon(
-                        widget.prefixIcon,
-                        color: Color.lerp(
-                          isDark
-                              ? PremiumColors.darkTextTertiary
-                              : PremiumColors.lightTextTertiary,
-                          PremiumColors.luxuryRed,
-                          _focusAnimation.value,
-                        ),
-                      )
-                    : null,
-                suffixIcon: widget.suffixIcon != null
-                    ? GestureDetector(
-                        onTap: widget.onSuffixTap,
-                        child: Icon(
-                          widget.suffixIcon,
-                          color: PremiumColors.luxuryRed,
-                        ),
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(PremiumSpacing.radiusMd),
-                  borderSide: BorderSide(
-                    color: Color.lerp(
-                      isDark
-                          ? PremiumColors.darkDivider
-                          : PremiumColors.lightDivider,
-                      PremiumColors.luxuryRed,
-                      _focusAnimation.value,
-                    )!,
-                    width: 1.5,
+              child: TextField(
+                controller: widget.controller,
+                keyboardType: widget.keyboardType,
+                maxLines: widget.obscureText ? 1 : widget.maxLines,
+                obscureText: widget.obscureText,
+                decoration: InputDecoration(
+                  hintText: widget.hint,
+                  prefixIcon: widget.prefixIcon != null
+                      ? Icon(
+                          widget.prefixIcon,
+                          color: Color.lerp(
+                            isDark
+                                ? PremiumColors.darkTextTertiary
+                                : PremiumColors.lightTextTertiary,
+                            PremiumColors.luxuryRed,
+                            _focusAnimation.value,
+                          ),
+                        )
+                      : null,
+                  suffixIcon: widget.suffixIcon != null
+                      ? GestureDetector(
+                          onTap: widget.onSuffixTap,
+                          child: Icon(
+                            widget.suffixIcon,
+                            color: PremiumColors.luxuryRed,
+                          ),
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      PremiumSpacing.radiusMd,
+                    ),
+                    borderSide: BorderSide(
+                      color: Color.lerp(
+                        isDark
+                            ? PremiumColors.darkDivider
+                            : PremiumColors.lightDivider,
+                        PremiumColors.luxuryRed,
+                        _focusAnimation.value,
+                      )!,
+                      width: 1.5,
+                    ),
                   ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(PremiumSpacing.radiusMd),
-                  borderSide: const BorderSide(
-                    color: PremiumColors.lightDivider,
-                    width: 1.5,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      PremiumSpacing.radiusMd,
+                    ),
+                    borderSide: const BorderSide(
+                      color: PremiumColors.lightDivider,
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -439,16 +428,16 @@ class PremiumChip extends StatefulWidget {
   final VoidCallback onSelected;
   final IconData? icon;
   final Color? backgroundColor;
-  
+
   const PremiumChip({
-    Key? key,
+    super.key,
     required this.label,
     required this.selected,
     required this.onSelected,
     this.icon,
     this.backgroundColor,
-  }) : super(key: key);
-  
+  });
+
   @override
   State<PremiumChip> createState() => _PremiumChipState();
 }
@@ -457,7 +446,7 @@ class _PremiumChipState extends State<PremiumChip>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -465,12 +454,13 @@ class _PremiumChipState extends State<PremiumChip>
       duration: AnimationUtils.fast,
       vsync: this,
     );
-    
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
-  
+
   @override
   void didUpdateWidget(PremiumChip oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -480,17 +470,17 @@ class _PremiumChipState extends State<PremiumChip>
       _controller.reverse();
     }
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Container(
@@ -498,9 +488,9 @@ class _PremiumChipState extends State<PremiumChip>
           color: widget.selected
               ? PremiumColors.luxuryRed
               : (widget.backgroundColor ??
-                  (isDark
-                      ? PremiumColors.darkSurfaceSecondary
-                      : PremiumColors.lightSurfaceSecondary)),
+                    (isDark
+                        ? PremiumColors.darkSurfaceSecondary
+                        : PremiumColors.lightSurfaceSecondary)),
           borderRadius: BorderRadius.circular(PremiumSpacing.radiusCircle),
           border: !widget.selected
               ? Border.all(
@@ -515,8 +505,7 @@ class _PremiumChipState extends State<PremiumChip>
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onSelected,
-            borderRadius:
-                BorderRadius.circular(PremiumSpacing.radiusCircle),
+            borderRadius: BorderRadius.circular(PremiumSpacing.radiusCircle),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: PremiumSpacing.lg,
@@ -531,8 +520,8 @@ class _PremiumChipState extends State<PremiumChip>
                       color: widget.selected
                           ? Colors.white
                           : (isDark
-                              ? PremiumColors.darkTextSecondary
-                              : PremiumColors.lightTextSecondary),
+                                ? PremiumColors.darkTextSecondary
+                                : PremiumColors.lightTextSecondary),
                       size: PremiumSpacing.iconSmall,
                     ),
                     const SizedBox(width: PremiumSpacing.sm),
@@ -543,8 +532,8 @@ class _PremiumChipState extends State<PremiumChip>
                       color: widget.selected
                           ? Colors.white
                           : (isDark
-                              ? PremiumColors.darkText
-                              : PremiumColors.lightText),
+                                ? PremiumColors.darkText
+                                : PremiumColors.lightText),
                     ),
                   ),
                 ],
@@ -564,18 +553,18 @@ class SkeletonLoader extends StatelessWidget {
   final double width;
   final double height;
   final double borderRadius;
-  
+
   const SkeletonLoader({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.borderRadius = PremiumSpacing.radiusMd,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return LoadingAnimations.shimmer(
       child: Container(
         width: width,
@@ -594,31 +583,22 @@ class SkeletonLoader extends StatelessWidget {
 /// Skeleton card loader
 class SkeletonCardLoader extends StatelessWidget {
   final int lines;
-  
-  const SkeletonCardLoader({
-    Key? key,
-    this.lines = 3,
-  }) : super(key: key);
-  
+
+  const SkeletonCardLoader({super.key, this.lines = 3});
+
   @override
   Widget build(BuildContext context) {
     return PremiumCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SkeletonLoader(
-            width: double.infinity,
-            height: 20,
-          ),
+          SkeletonLoader(width: double.infinity, height: 20),
           const SizedBox(height: PremiumSpacing.md),
           ...List.generate(
             lines,
             (index) => Padding(
               padding: const EdgeInsets.only(bottom: PremiumSpacing.sm),
-              child: SkeletonLoader(
-                width: double.infinity,
-                height: 12,
-              ),
+              child: SkeletonLoader(width: double.infinity, height: 12),
             ),
           ),
         ],
@@ -635,20 +615,20 @@ class PremiumBadge extends StatelessWidget {
   final Color? bgColor;
   final Color? textColor;
   final IconData? icon;
-  
+
   const PremiumBadge({
-    Key? key,
+    super.key,
     required this.label,
     this.bgColor,
     this.textColor,
     this.icon,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: bgColor ?? PremiumColors.luxuryRed.withOpacity(0.1),
+        color: bgColor ?? PremiumColors.luxuryRed.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(PremiumSpacing.radiusMd),
       ),
       padding: const EdgeInsets.symmetric(
@@ -684,17 +664,17 @@ class PremiumBadge extends StatelessWidget {
 class PremiumDivider extends StatelessWidget {
   final String? label;
   final EdgeInsets padding;
-  
+
   const PremiumDivider({
-    Key? key,
+    super.key,
     this.label,
     this.padding = const EdgeInsets.symmetric(vertical: PremiumSpacing.lg),
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     if (label == null) {
       return Padding(
         padding: padding,
@@ -705,7 +685,7 @@ class PremiumDivider extends StatelessWidget {
         ),
       );
     }
-    
+
     return Padding(
       padding: padding,
       child: Row(
@@ -718,9 +698,7 @@ class PremiumDivider extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: PremiumSpacing.md,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: PremiumSpacing.md),
             child: Text(
               label!,
               style: PremiumTypography.bodySmall.copyWith(
@@ -754,9 +732,9 @@ class PremiumListTile extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? backgroundColor;
   final EdgeInsets padding;
-  
+
   const PremiumListTile({
-    Key? key,
+    super.key,
     required this.title,
     this.subtitle,
     this.leadingIcon,
@@ -764,15 +742,16 @@ class PremiumListTile extends StatelessWidget {
     this.onTap,
     this.backgroundColor,
     this.padding = const EdgeInsets.all(PremiumSpacing.lg),
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final content = Container(
       decoration: BoxDecoration(
-        color: backgroundColor ??
+        color:
+            backgroundColor ??
             (isDark
                 ? PremiumColors.darkSurfaceSecondary
                 : PremiumColors.lightSurfaceSecondary),
@@ -788,10 +767,7 @@ class PremiumListTile extends StatelessWidget {
             child: Row(
               children: [
                 if (leadingIcon != null) ...[
-                  Icon(
-                    leadingIcon,
-                    color: PremiumColors.luxuryRed,
-                  ),
+                  Icon(leadingIcon, color: PremiumColors.luxuryRed),
                   const SizedBox(width: PremiumSpacing.lg),
                 ],
                 Expanded(
@@ -835,14 +811,11 @@ class PremiumListTile extends StatelessWidget {
         ),
       ),
     );
-    
+
     if (onTap != null) {
-      return CardAnimations.elevationOnTap(
-        onTap: onTap!,
-        child: content,
-      );
+      return CardAnimations.elevationOnTap(onTap: onTap!, child: content);
     }
-    
+
     return content;
   }
 }

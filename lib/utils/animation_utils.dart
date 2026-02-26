@@ -10,9 +10,9 @@ class AnimationUtils {
   static const Duration slow = Duration(milliseconds: 500);
   static const Duration slower = Duration(milliseconds: 700);
   static const Duration slowest = Duration(milliseconds: 1000);
-  
+
   // Animation curves
-  static const Curve smoothCurve = Cubic(0.4, 0.0, 0.2, 1.0);      // Fluent curve
+  static const Curve smoothCurve = Cubic(0.4, 0.0, 0.2, 1.0); // Fluent curve
   static const Curve easeIn = Curves.easeIn;
   static const Curve easeOut = Curves.easeOut;
   static const Curve easeInOut = Curves.easeInOut;
@@ -35,7 +35,7 @@ class PageTransitions {
       },
     );
   }
-  
+
   /// Slide transition (right to left)
   static PageRoute<T> slideTransition<T>(
     Widget page, {
@@ -63,15 +63,12 @@ class PageTransitions {
         }
         const end = Offset.zero;
         final tween = Tween(begin: begin, end: end);
-        
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
     );
   }
-  
+
   /// Scale transition
   static PageRoute<T> scaleTransition<T>(
     Widget page, {
@@ -83,16 +80,17 @@ class PageTransitions {
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return ScaleTransition(
           scale: animation.drive(
-            Tween(begin: 0.0, end: 1.0).chain(
-              CurveTween(curve: AnimationUtils.easeOutBack),
-            ),
+            Tween(
+              begin: 0.0,
+              end: 1.0,
+            ).chain(CurveTween(curve: AnimationUtils.easeOutBack)),
           ),
           child: child,
         );
       },
     );
   }
-  
+
   /// Combined slide and fade transition
   static PageRoute<T> slideAndFadeTransition<T>(
     Widget page, {
@@ -114,7 +112,7 @@ class PageTransitions {
       },
     );
   }
-  
+
   /// Rotate and fade transition
   static PageRoute<T> rotateAndFadeTransition<T>(
     Widget page, {
@@ -128,8 +126,10 @@ class PageTransitions {
           scale: animation,
           child: RotationTransition(
             turns: animation.drive(
-              Tween(begin: -0.1, end: 0.0)
-                  .chain(CurveTween(curve: AnimationUtils.easeOutBack)),
+              Tween(
+                begin: -0.1,
+                end: 0.0,
+              ).chain(CurveTween(curve: AnimationUtils.easeOutBack)),
             ),
             child: FadeTransition(opacity: animation, child: child),
           ),
@@ -153,7 +153,7 @@ class ButtonAnimations {
       child: child,
     );
   }
-  
+
   /// Ripple effect on tap
   static Widget rippleEffect({
     required Widget child,
@@ -164,13 +164,13 @@ class ButtonAnimations {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        splashColor: rippleColor.withOpacity(0.3),
-        highlightColor: rippleColor.withOpacity(0.1),
+        splashColor: rippleColor.withValues(alpha: 0.3),
+        highlightColor: rippleColor.withValues(alpha: 0.1),
         child: child,
       ),
     );
   }
-  
+
   /// Elevation change on hover/press
   static Widget elevatedOnPress({
     required Widget child,
@@ -194,36 +194,25 @@ class CardAnimations {
     required Widget child,
     required VoidCallback onTap,
   }) {
-    return _TapElevationCard(
-      onTap: onTap,
-      child: child,
-    );
+    return _TapElevationCard(onTap: onTap, child: child);
   }
-  
+
   /// Floating animation effect
   static Widget floatingEffect({
     required Widget child,
     double offsetY = 4,
     Duration duration = const Duration(milliseconds: 2000),
   }) {
-    return _FloatingCard(
-      offsetY: offsetY,
-      duration: duration,
-      child: child,
-    );
+    return _FloatingCard(offsetY: offsetY, duration: duration, child: child);
   }
-  
+
   /// Slide-in animation
   static Widget slideInAnimation({
     required Widget child,
     Duration duration = const Duration(milliseconds: 400),
     Offset offset = const Offset(0.0, 0.5),
   }) {
-    return _SlideInCard(
-      duration: duration,
-      offset: offset,
-      child: child,
-    );
+    return _SlideInCard(duration: duration, offset: offset, child: child);
   }
 }
 
@@ -234,21 +223,15 @@ class LoadingAnimations {
     required Widget child,
     Duration duration = const Duration(milliseconds: 1500),
   }) {
-    return _ShimmerEffect(
-      duration: duration,
-      child: child,
-    );
+    return _ShimmerEffect(duration: duration, child: child);
   }
-  
+
   /// Pulsing animation
   static Widget pulse({
     required Widget child,
     Duration duration = const Duration(milliseconds: 1500),
   }) {
-    return _PulseAnimation(
-      duration: duration,
-      child: child,
-    );
+    return _PulseAnimation(duration: duration, child: child);
   }
 }
 
@@ -274,13 +257,13 @@ class _PressScaleButton extends StatefulWidget {
   final Widget child;
   final VoidCallback onPressed;
   final Duration duration;
-  
+
   const _PressScaleButton({
     required this.child,
     required this.onPressed,
     required this.duration,
   });
-  
+
   @override
   State<_PressScaleButton> createState() => _PressScaleButtonState();
 }
@@ -289,44 +272,39 @@ class _PressScaleButtonState extends State<_PressScaleButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
-    
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this);
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   void _onTapDown(TapDownDetails details) {
     _controller.forward();
   }
-  
+
   void _onTapUp(TapUpDetails details) {
     _controller.reverse();
     widget.onPressed();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: widget.child,
-      ),
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
     );
   }
 }
@@ -336,14 +314,14 @@ class _PressElevatedButton extends StatefulWidget {
   final VoidCallback onPressed;
   final double baseElevation;
   final double pressedElevation;
-  
+
   const _PressElevatedButton({
     required this.child,
     required this.onPressed,
     required this.baseElevation,
     required this.pressedElevation,
   });
-  
+
   @override
   State<_PressElevatedButton> createState() => _PressElevatedButtonState();
 }
@@ -352,7 +330,7 @@ class _PressElevatedButtonState extends State<_PressElevatedButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _elevationAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -360,28 +338,28 @@ class _PressElevatedButtonState extends State<_PressElevatedButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    
+
     _elevationAnimation = Tween<double>(
       begin: widget.baseElevation,
       end: widget.pressedElevation,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   void _onTapDown(TapDownDetails details) {
     _controller.forward();
   }
-  
+
   void _onTapUp(TapUpDetails details) {
     _controller.reverse();
     widget.onPressed();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -394,7 +372,9 @@ class _PressElevatedButtonState extends State<_PressElevatedButton>
             decoration: BoxDecoration(
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1 * _elevationAnimation.value),
+                  color: Colors.black.withValues(
+                    alpha: 0.1 * _elevationAnimation.value,
+                  ),
                   blurRadius: 6 * _elevationAnimation.value,
                   offset: Offset(0, 2 * _elevationAnimation.value),
                 ),
@@ -412,12 +392,9 @@ class _PressElevatedButtonState extends State<_PressElevatedButton>
 class _TapElevationCard extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
-  
-  const _TapElevationCard({
-    required this.child,
-    required this.onTap,
-  });
-  
+
+  const _TapElevationCard({required this.child, required this.onTap});
+
   @override
   State<_TapElevationCard> createState() => _TapElevationCardState();
 }
@@ -426,7 +403,7 @@ class _TapElevationCardState extends State<_TapElevationCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _elevationAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -434,18 +411,19 @@ class _TapElevationCardState extends State<_TapElevationCard>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    
-    _elevationAnimation = Tween<double>(begin: 0, end: 8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+
+    _elevationAnimation = Tween<double>(
+      begin: 0,
+      end: 8,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -462,7 +440,7 @@ class _TapElevationCardState extends State<_TapElevationCard>
             decoration: BoxDecoration(
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: _elevationAnimation.value,
                   offset: Offset(0, _elevationAnimation.value / 2),
                 ),
@@ -481,13 +459,13 @@ class _FloatingCard extends StatefulWidget {
   final Widget child;
   final double offsetY;
   final Duration duration;
-  
+
   const _FloatingCard({
     required this.child,
     required this.offsetY,
     required this.duration,
   });
-  
+
   @override
   State<_FloatingCard> createState() => _FloatingCardState();
 }
@@ -496,26 +474,25 @@ class _FloatingCardState extends State<_FloatingCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _offsetAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    )..repeat(reverse: true);
-    
-    _offsetAnimation = Tween<double>(begin: 0, end: widget.offsetY).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this)
+      ..repeat(reverse: true);
+
+    _offsetAnimation = Tween<double>(
+      begin: 0,
+      end: widget.offsetY,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -535,13 +512,13 @@ class _SlideInCard extends StatefulWidget {
   final Widget child;
   final Duration duration;
   final Offset offset;
-  
+
   const _SlideInCard({
     required this.child,
     required this.duration,
     required this.offset,
   });
-  
+
   @override
   State<_SlideInCard> createState() => _SlideInCardState();
 }
@@ -551,27 +528,31 @@ class _SlideInCardState extends State<_SlideInCard>
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
-  
+
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(duration: widget.duration, vsync: this);
-    
-    _slideAnimation = Tween<Offset>(begin: widget.offset, end: Offset.zero)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    
-    _fadeAnimation = Tween<double>(begin: 0, end: 1)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    
+
+    _slideAnimation = Tween<Offset>(
+      begin: widget.offset,
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
     _controller.forward();
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return SlideTransition(
@@ -584,12 +565,9 @@ class _SlideInCardState extends State<_SlideInCard>
 class _ShimmerEffect extends StatefulWidget {
   final Widget child;
   final Duration duration;
-  
-  const _ShimmerEffect({
-    required this.child,
-    required this.duration,
-  });
-  
+
+  const _ShimmerEffect({required this.child, required this.duration});
+
   @override
   State<_ShimmerEffect> createState() => _ShimmerEffectState();
 }
@@ -598,25 +576,25 @@ class _ShimmerEffectState extends State<_ShimmerEffect>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _shimmerAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    )..repeat();
-    
-    _shimmerAnimation = Tween<double>(begin: -1, end: 2)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
+    _controller = AnimationController(duration: widget.duration, vsync: this)
+      ..repeat();
+
+    _shimmerAnimation = Tween<double>(
+      begin: -1,
+      end: 2,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -633,9 +611,9 @@ class _ShimmerEffectState extends State<_ShimmerEffect>
                 _shimmerAnimation.value + 0.3,
               ],
               colors: [
-                Colors.white.withOpacity(0.0),
-                Colors.white.withOpacity(0.3),
-                Colors.white.withOpacity(0.0),
+                Colors.white.withValues(alpha: 0.0),
+                Colors.white.withValues(alpha: 0.3),
+                Colors.white.withValues(alpha: 0.0),
               ],
             ).createShader(bounds);
           },
@@ -650,12 +628,9 @@ class _ShimmerEffectState extends State<_ShimmerEffect>
 class _PulseAnimation extends StatefulWidget {
   final Widget child;
   final Duration duration;
-  
-  const _PulseAnimation({
-    required this.child,
-    required this.duration,
-  });
-  
+
+  const _PulseAnimation({required this.child, required this.duration});
+
   @override
   State<_PulseAnimation> createState() => _PulseAnimationState();
 }
@@ -664,26 +639,25 @@ class _PulseAnimationState extends State<_PulseAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _opacityAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    )..repeat(reverse: true);
-    
-    _opacityAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this)
+      ..repeat(reverse: true);
+
+    _opacityAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return FadeTransition(opacity: _opacityAnimation, child: widget.child);
@@ -694,13 +668,13 @@ class _ScrollFadeSlideAnimation extends StatefulWidget {
   final Widget child;
   final ScrollController scrollController;
   final Duration duration;
-  
+
   const _ScrollFadeSlideAnimation({
     required this.child,
     required this.scrollController,
     required this.duration,
   });
-  
+
   @override
   State<_ScrollFadeSlideAnimation> createState() =>
       _ScrollFadeSlideAnimationState();
@@ -709,14 +683,14 @@ class _ScrollFadeSlideAnimation extends StatefulWidget {
 class _ScrollFadeSlideAnimationState extends State<_ScrollFadeSlideAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  
+
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(duration: widget.duration, vsync: this);
     widget.scrollController.addListener(_onScroll);
   }
-  
+
   void _onScroll() {
     if (widget.scrollController.offset > 0) {
       _controller.forward();
@@ -724,14 +698,14 @@ class _ScrollFadeSlideAnimationState extends State<_ScrollFadeSlideAnimation>
       _controller.reverse();
     }
   }
-  
+
   @override
   void dispose() {
     widget.scrollController.removeListener(_onScroll);
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return SlideTransition(

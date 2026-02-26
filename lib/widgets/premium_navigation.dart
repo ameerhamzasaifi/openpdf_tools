@@ -7,14 +7,14 @@ class PremiumBottomNavigation extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final List<BottomNavItem> items;
-  
+
   const PremiumBottomNavigation({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.onTap,
     required this.items,
-  }) : super(key: key);
-  
+  });
+
   @override
   State<PremiumBottomNavigation> createState() =>
       _PremiumBottomNavigationState();
@@ -23,20 +23,18 @@ class PremiumBottomNavigation extends StatefulWidget {
 class _PremiumBottomNavigationState extends State<PremiumBottomNavigation>
     with TickerProviderStateMixin {
   late List<AnimationController> _animationControllers;
-  
+
   @override
   void initState() {
     super.initState();
     _animationControllers = List.generate(
       widget.items.length,
-      (index) => AnimationController(
-        duration: AnimationUtils.standard,
-        vsync: this,
-      ),
+      (index) =>
+          AnimationController(duration: AnimationUtils.standard, vsync: this),
     );
     _animationControllers[widget.currentIndex].forward();
   }
-  
+
   @override
   void didUpdateWidget(PremiumBottomNavigation oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -45,7 +43,7 @@ class _PremiumBottomNavigationState extends State<PremiumBottomNavigation>
       _animationControllers[widget.currentIndex].forward();
     }
   }
-  
+
   @override
   void dispose() {
     for (final controller in _animationControllers) {
@@ -53,11 +51,11 @@ class _PremiumBottomNavigationState extends State<PremiumBottomNavigation>
     }
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: isDark
@@ -65,7 +63,7 @@ class _PremiumBottomNavigationState extends State<PremiumBottomNavigation>
             : PremiumColors.lightSurfacePrimary,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
             blurRadius: 20,
             offset: const Offset(0, -2),
           ),
@@ -102,14 +100,14 @@ class _AnimatedNavItem extends StatefulWidget {
   final bool isActive;
   final AnimationController animationController;
   final VoidCallback onTap;
-  
+
   const _AnimatedNavItem({
     required this.item,
     required this.isActive,
     required this.animationController,
     required this.onTap,
   });
-  
+
   @override
   State<_AnimatedNavItem> createState() => _AnimatedNavItemState();
 }
@@ -117,13 +115,13 @@ class _AnimatedNavItem extends StatefulWidget {
 class _AnimatedNavItemState extends State<_AnimatedNavItem> {
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
-  
+
   @override
   void initState() {
     super.initState();
     _setupAnimations();
   }
-  
+
   void _setupAnimations() {
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
       CurvedAnimation(
@@ -131,7 +129,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem> {
         curve: Curves.easeOutBack,
       ),
     );
-    
+
     _opacityAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
       CurvedAnimation(
         parent: widget.animationController,
@@ -139,7 +137,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem> {
       ),
     );
   }
-  
+
   @override
   void didUpdateWidget(_AnimatedNavItem oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -147,11 +145,11 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem> {
       _setupAnimations();
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return GestureDetector(
       onTap: widget.onTap,
       child: AnimatedBuilder(
@@ -166,10 +164,11 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem> {
                   padding: const EdgeInsets.all(PremiumSpacing.md),
                   decoration: BoxDecoration(
                     color: widget.isActive
-                        ? PremiumColors.luxuryRed.withOpacity(0.15)
+                        ? PremiumColors.luxuryRed.withValues(alpha: 0.15)
                         : Colors.transparent,
-                    borderRadius:
-                        BorderRadius.circular(PremiumSpacing.radiusMd),
+                    borderRadius: BorderRadius.circular(
+                      PremiumSpacing.radiusMd,
+                    ),
                   ),
                   child: Icon(
                     widget.item.icon,
@@ -193,8 +192,8 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem> {
                     color: widget.isActive
                         ? PremiumColors.luxuryRed
                         : (isDark
-                            ? PremiumColors.darkTextTertiary
-                            : PremiumColors.lightTextTertiary),
+                              ? PremiumColors.darkTextTertiary
+                              : PremiumColors.lightTextTertiary),
                   ),
                 ),
               ),
@@ -210,11 +209,8 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem> {
 class BottomNavItem {
   final IconData icon;
   final String label;
-  
-  BottomNavItem({
-    required this.icon,
-    required this.label,
-  });
+
+  BottomNavItem({required this.icon, required this.label});
 }
 
 /// Premium top app bar with elevation and blur effects
@@ -224,23 +220,23 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBackPressed;
   final bool showBackButton;
   final bool showElevation;
-  
+
   const PremiumAppBar({
-    Key? key,
+    super.key,
     required this.title,
     this.actions,
     this.onBackPressed,
     this.showBackButton = true,
     this.showElevation = true,
-  }) : super(key: key);
-  
+  });
+
   @override
   Size get preferredSize => const Size.fromHeight(56);
-  
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: isDark
@@ -249,7 +245,7 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
         boxShadow: showElevation
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
                   blurRadius: 12,
                   offset: const Offset(0, 2),
                 ),
@@ -274,8 +270,9 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
                       color: isDark
                           ? PremiumColors.darkSurfaceSecondary
                           : PremiumColors.lightSurfaceSecondary,
-                      borderRadius:
-                          BorderRadius.circular(PremiumSpacing.radiusMd),
+                      borderRadius: BorderRadius.circular(
+                        PremiumSpacing.radiusMd,
+                      ),
                     ),
                     child: Icon(
                       Icons.arrow_back_ios_new,
@@ -317,16 +314,16 @@ class PremiumIconButton extends StatefulWidget {
   final Color? color;
   final double size;
   final bool showBackground;
-  
+
   const PremiumIconButton({
-    Key? key,
+    super.key,
     required this.icon,
     required this.onPressed,
     this.color,
     this.size = PremiumSpacing.iconMedium,
     this.showBackground = true,
-  }) : super(key: key);
-  
+  });
+
   @override
   State<PremiumIconButton> createState() => _PremiumIconButtonState();
 }
@@ -335,7 +332,7 @@ class _PremiumIconButtonState extends State<PremiumIconButton> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return ButtonAnimations.scaleOnPress(
       onPressed: widget.onPressed,
       child: Container(
@@ -343,8 +340,8 @@ class _PremiumIconButtonState extends State<PremiumIconButton> {
         decoration: BoxDecoration(
           color: widget.showBackground
               ? (isDark
-                  ? PremiumColors.darkSurfaceSecondary
-                  : PremiumColors.lightSurfaceSecondary)
+                    ? PremiumColors.darkSurfaceSecondary
+                    : PremiumColors.lightSurfaceSecondary)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(PremiumSpacing.radiusMd),
         ),

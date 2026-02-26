@@ -1,13 +1,19 @@
-import 'dart:io';
+import 'dart:io' show Directory, FileSystemEntity, File;
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import '../utils/platform_helper.dart';
 
 /// Get a sensible default directory for file picking on Linux/macOS/Windows
 Future<String> _getDefaultPickDirectory() async {
+  if (kIsWeb) {
+    return '/'; // Web doesn't have file system access
+  }
+
   try {
     // Try Downloads directory first
     final downloadsDir = await getDownloadsDirectory();
@@ -19,9 +25,9 @@ Future<String> _getDefaultPickDirectory() async {
   }
 
   try {
-    // Fallback to home directory
-    final homeDir = Platform.environment['HOME'];
-    if (homeDir != null && await Directory(homeDir).exists()) {
+    // Fallback to home directory - platform-specific
+    final homeDir = const String.fromEnvironment('HOME', defaultValue: '/home');
+    if (homeDir.isNotEmpty && await Directory(homeDir).exists()) {
       return homeDir;
     }
   } catch (e) {
@@ -29,7 +35,7 @@ Future<String> _getDefaultPickDirectory() async {
   }
 
   // Final fallback to root or current directory
-  return Platform.isWindows ? 'C:\\' : '/home';
+  return '/home';
 }
 
 /// Simple in-app file picker dialog that supports single and multi-selection,
@@ -76,7 +82,11 @@ class _InAppFilePickerDialog extends StatefulWidget {
   final String initialDir;
   final List<String> allowedExtensions;
   final bool allowMultiple;
-  const _InAppFilePickerDialog({required this.initialDir, required this.allowedExtensions, required this.allowMultiple});
+  const _InAppFilePickerDialog({
+    required this.initialDir,
+    required this.allowedExtensions,
+    required this.allowMultiple,
+  });
 
   @override
   State<_InAppFilePickerDialog> createState() => _InAppFilePickerDialogState();
@@ -97,7 +107,7 @@ class _InAppFilePickerDialogState extends State<_InAppFilePickerDialog> {
 
   Future<void> _ensurePermissionsAndRead() async {
     // On Android we need to request storage permission for direct file access
-    if (Platform.isAndroid) {
+    if (!kIsWeb && PlatformHelper.isAndroid) {
       final status = await Permission.storage.request();
       if (!status.isGranted) {
         // If not granted, still allow entering a path or using the gallery alternative
@@ -144,15 +154,24 @@ class _InAppFilePickerDialogState extends State<_InAppFilePickerDialog> {
 
   Future<void> _enterPath() async {
     final controller = TextEditingController(text: currentDir);
-      // ignore: use_build_context_synchronously
+    // ignore: use_build_context_synchronously
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Enter path'),
-        content: TextField(controller: controller, decoration: const InputDecoration(hintText: '/path/to/file.pdf')),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: '/path/to/file.pdf'),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('OK')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('OK'),
+          ),
         ],
       ),
     );
@@ -165,8 +184,10 @@ class _InAppFilePickerDialogState extends State<_InAppFilePickerDialog> {
         // ignore: use_build_context_synchronously
         Navigator.of(context).pop([f.path]);
       } else {
-      // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File not found')));
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('File not found')));
       }
     }
   }
@@ -188,29 +209,31 @@ class _InAppFilePickerDialogState extends State<_InAppFilePickerDialog> {
     } catch (e) {
       developer.log('Gallery pick failed', error: e);
       if (mounted) {
-      // ignore: use_build_context_synchronously
+        // ignore: use_build_context_synchronously
         // ignore: use_build_context_synchronously
 
         // ignore: use_build_context_synchronously
 
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gallery pick failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gallery pick failed: $e')));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = Platform.isAndroid || Platform.isIOS;
+    final isMobile =
+        !kIsWeb && (PlatformHelper.isAndroid || PlatformHelper.isIOS);
     final width = isMobile ? MediaQuery.of(context).size.width * 0.95 : 700.0;
     final height = isMobile ? MediaQuery.of(context).size.height * 0.7 : 420.0;
 
     return AlertDialog(
       title: Row(
         children: [
-          Expanded(child: Text(widget.allowMultiple ? 'Select files' : 'Select file')),
+          Expanded(
+            child: Text(widget.allowMultiple ? 'Select files' : 'Select file'),
+          ),
           IconButton(icon: const Icon(Icons.arrow_upward), onPressed: _goUp),
           IconButton(icon: const Icon(Icons.edit), onPressed: _enterPath),
         ],
@@ -225,8 +248,20 @@ class _InAppFilePickerDialogState extends State<_InAppFilePickerDialog> {
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               child: Row(
                 children: [
-                  Expanded(child: Text(currentDir, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
-                  if (Platform.isAndroid || Platform.isIOS) TextButton.icon(onPressed: _useGallery, icon: const Icon(Icons.photo), label: const Text('Gallery')),
+                  Expanded(
+                    child: Text(
+                      currentDir,
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (!kIsWeb &&
+                      (PlatformHelper.isAndroid || PlatformHelper.isIOS))
+                    TextButton.icon(
+                      onPressed: _useGallery,
+                      icon: const Icon(Icons.photo),
+                      label: const Text('Gallery'),
+                    ),
                 ],
               ),
             ),
@@ -235,68 +270,87 @@ class _InAppFilePickerDialogState extends State<_InAppFilePickerDialog> {
               child: loading
                   ? const Center(child: CircularProgressIndicator())
                   : entries.isEmpty
-                      ? Center(child: Text('No files or permission denied in $currentDir'))
-                      : ListView.builder(
-                          itemCount: entries.length,
-                          itemBuilder: (ctx, i) {
-                            final e = entries[i];
-                            final name = p.basename(e.path);
-                            if (e is Directory) {
-                              return ListTile(
-                                leading: const Icon(Icons.folder),
-                                title: Text(name),
-                                onTap: () {
-                                  setState(() => currentDir = e.path);
-                                  // ignore: use_build_context_synchronously
+                  ? Center(
+                      child: Text(
+                        'No files or permission denied in $currentDir',
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: entries.length,
+                      itemBuilder: (ctx, i) {
+                        final e = entries[i];
+                        final name = p.basename(e.path);
+                        if (e is Directory) {
+                          return ListTile(
+                            leading: const Icon(Icons.folder),
+                            title: Text(name),
+                            onTap: () {
+                              setState(() => currentDir = e.path);
+                              // ignore: use_build_context_synchronously
 
-                                  _readDir();
-                                },
-                              );
-                            } else {
-                              if (!_fileAllowed(e.path)) return const SizedBox.shrink();
-                              final stat = e.statSync();
-                              final selected = _selected.contains(e.path);
-                              return ListTile(
-                                leading: widget.allowMultiple
-                                    ? Checkbox(value: selected, onChanged: (v) => setState(() => v == true ? _selected.add(e.path) : _selected.remove(e.path)))
-                                    // ignore: use_build_context_synchronously
-
-                                    : const Icon(Icons.insert_drive_file),
-                                title: Text(name),
-                                subtitle: Text('${(stat.size / 1024).toStringAsFixed(1)} KB'),
-                                onTap: () {
-                                  if (widget.allowMultiple) {
-                                    setState(() {
-                                      if (selected) {
-                                          _selected.remove(e.path);
-                                        } else {
-                                          _selected.add(e.path);
-                                        }
-                                    });
+                              _readDir();
+                            },
+                          );
+                        } else {
+                          if (!_fileAllowed(e.path)) {
+                            return const SizedBox.shrink();
+                          }
+                          final stat = e.statSync();
+                          final selected = _selected.contains(e.path);
+                          return ListTile(
+                            leading: widget.allowMultiple
+                                ? Checkbox(
+                                    value: selected,
+                                    onChanged: (v) => setState(
+                                      () => v == true
+                                          ? _selected.add(e.path)
+                                          : _selected.remove(e.path),
+                                    ),
+                                  )
+                                // ignore: use_build_context_synchronously
+                                : const Icon(Icons.insert_drive_file),
+                            title: Text(name),
+                            subtitle: Text(
+                              '${(stat.size / 1024).toStringAsFixed(1)} KB',
+                            ),
+                            onTap: () {
+                              if (widget.allowMultiple) {
+                                setState(() {
+                                  if (selected) {
+                                    _selected.remove(e.path);
                                   } else {
-                                    Navigator.of(context).pop([e.path]);
+                                    _selected.add(e.path);
                                   }
-                                },
-                              );
-                            }
-                          },
-                        ),
+                                });
+                              } else {
+                                Navigator.of(context).pop([e.path]);
+                              }
+                            },
+                          );
+                        }
+                      },
+                    ),
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(onPressed: () => Navigator.of(context).pop(null), child: const Text('Cancel')),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(null),
+                  child: const Text('Cancel'),
+                ),
                 if (widget.allowMultiple)
                   Padding(
                     padding: const EdgeInsets.only(left: 8.0),
                     child: ElevatedButton(
-                      onPressed: _selected.isEmpty ? null : () => Navigator.of(context).pop(_selected.toList()),
+                      onPressed: _selected.isEmpty
+                          ? null
+                          : () => Navigator.of(context).pop(_selected.toList()),
                       child: Text('Select ${_selected.length}'),
                     ),
                   ),
               ],
-            )
+            ),
           ],
         ),
       ),

@@ -1,0 +1,19 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=OpenPDF Tools
+Comment=PDF viewer, creator, compressor and sharing app
+Exec=openpdf_tools %F
+Icon=openpdf_tools
+Terminal=false
+Categories=Utility;Office;Viewer;
+MimeType=application/pdf;
+Keywords=pdf;viewer;compress;edit;
+StartupNotify=true
+StartupWMClass=openpdf_tools
+
+# File associations
+MimeType=application/pdf;
+
+# URL scheme support
+X-KDE-Protocols=openpdf

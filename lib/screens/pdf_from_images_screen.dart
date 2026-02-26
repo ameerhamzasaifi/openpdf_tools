@@ -44,10 +44,11 @@ class _PdfFromImagesScreenState extends State<PdfFromImagesScreen> {
       );
 
       if (selected == null || selected.isEmpty) {
-      // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No images selected')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('No images selected')));
+        }
         return;
       }
 
@@ -55,10 +56,11 @@ class _PdfFromImagesScreenState extends State<PdfFromImagesScreen> {
         images.addAll(selected.map((p) => File(p)));
       });
     } catch (e) {
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick images: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to pick images: $e')));
+      }
     }
   }
 
@@ -80,9 +82,7 @@ class _PdfFromImagesScreenState extends State<PdfFromImagesScreen> {
 
         pdf.addPage(
           pw.Page(
-            build: (_) => pw.Center(
-              child: pw.Image(pw.MemoryImage(bytes)),
-            ),
+            build: (_) => pw.Center(child: pw.Image(pw.MemoryImage(bytes))),
           ),
         );
       }
@@ -95,7 +95,9 @@ class _PdfFromImagesScreenState extends State<PdfFromImagesScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('PDF Ready'),
-          content: const Text('Would you like to download the PDF to your device or share it with other apps?'),
+          content: const Text(
+            'Would you like to download the PDF to your device or share it with other apps?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop('download'),
@@ -118,28 +120,22 @@ class _PdfFromImagesScreenState extends State<PdfFromImagesScreen> {
         final file = File('${dir.path}/openpdf_images.pdf');
         await file.writeAsBytes(bytes);
         if (mounted) {
-      // ignore: use_build_context_synchronously
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Saved to ${file.path}')),
-          );
+          // ignore: use_build_context_synchronously
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Saved to ${file.path}')));
         }
       } else if (action == 'share') {
         await Printing.sharePdf(bytes: bytes, filename: 'openpdf_images.pdf');
       }
     } catch (e) {
-      // ignore: use_build_context_synchronously
-      // ignore: use_build_context_synchronously
-
-      // ignore: use_build_context_synchronously
-
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create PDF: $e')),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to create PDF: $e')));
     } finally {
       setState(() => _isProcessing = false);
-    // ignore: use_build_context_synchronously
-
+      // ignore: use_build_context_synchronously
     }
   }
 
@@ -212,7 +208,10 @@ class _PdfFromImagesScreenState extends State<PdfFromImagesScreen> {
                   ? const SizedBox(
                       height: 18,
                       width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Text('Create & Share PDF'),
             ),

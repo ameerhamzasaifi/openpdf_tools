@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <!-- This file registers the openpdf:// URI scheme with the system -->
+  <mime-type type="x-scheme-handler/openpdf">
+    <comment>OpenPDF URI handler</comment>
+    <glob pattern="openpdf://*"/>
+  </mime-type>
+
+  <!-- PDF MIME type handler (usually already defined) -->
+  <!-- Uncomment if needed:
+  <mime-type type="application/pdf">
+    <comment>PDF Document</comment>
+    <generic-icon name="text-x-generic"/>
+    <glob pattern="*.pdf"/>
+    <glob pattern="*.PDF"/>
+  </mime-type>
+  -->
+</mime-info>

@@ -1,13 +1,13 @@
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' as io show Platform;
 
 /// Utility class for platform detection and platform-specific operations
 class PlatformHelper {
   /// Check if running on Android
-  static bool get isAndroid => Platform.isAndroid;
+  static bool get isAndroid => !kIsWeb && io.Platform.isAndroid;
 
   /// Check if running on iOS
-  static bool get isIOS => Platform.isIOS;
+  static bool get isIOS => !kIsWeb && io.Platform.isIOS;
 
   /// Check if running on mobile (Android or iOS)
   static bool get isMobile => !kIsWeb && (isAndroid || isIOS);
@@ -16,13 +16,13 @@ class PlatformHelper {
   static bool get isDesktop => !kIsWeb && (isWindows || isMacOS || isLinux);
 
   /// Check if running on Windows
-  static bool get isWindows => Platform.isWindows;
+  static bool get isWindows => !kIsWeb && io.Platform.isWindows;
 
   /// Check if running on macOS
-  static bool get isMacOS => Platform.isMacOS;
+  static bool get isMacOS => !kIsWeb && io.Platform.isMacOS;
 
   /// Check if running on Linux
-  static bool get isLinux => Platform.isLinux;
+  static bool get isLinux => !kIsWeb && io.Platform.isLinux;
 
   /// Check if running on web
   static bool get isWeb => kIsWeb;

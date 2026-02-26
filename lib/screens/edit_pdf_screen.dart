@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:openpdf_tools/services/pdf_editing_service.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -33,13 +32,13 @@ class _EditPdfScreenState extends State<EditPdfScreen>
       vsync: this,
     );
 
-    _backgroundColorAnimation = ColorTween(
-      begin: Colors.white,
-      end: Colors.white,
-    ).animate(CurvedAnimation(
-      parent: _backgroundColorAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _backgroundColorAnimation =
+        ColorTween(begin: Colors.white, end: Colors.white).animate(
+          CurvedAnimation(
+            parent: _backgroundColorAnimationController,
+            curve: Curves.easeInOut,
+          ),
+        );
   }
 
   @override
@@ -59,7 +58,7 @@ class _EditPdfScreenState extends State<EditPdfScreen>
         setState(() => _pdfPath = result.files.single.path);
       }
     } catch (e) {
-      // ignore: use_build_context_synchronously
+      if (!mounted) return;
       final choice = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -84,7 +83,7 @@ class _EditPdfScreenState extends State<EditPdfScreen>
 
       if (choice == 'enter') {
         final controller = TextEditingController();
-        // ignore: use_build_context_synchronously
+        if (!mounted) return;
         final custom = await showDialog<String>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -146,15 +145,27 @@ class _EditPdfScreenState extends State<EditPdfScreen>
           );
           break;
         case 'bgColor':
+          final r = ((_selectedBackgroundColor.r * 255.0).round().clamp(
+            0,
+            255,
+          ));
+          final g = ((_selectedBackgroundColor.g * 255.0).round().clamp(
+            0,
+            255,
+          ));
+          final b = ((_selectedBackgroundColor.b * 255.0).round().clamp(
+            0,
+            255,
+          ));
+          final colorHex =
+              '#${((r << 16) | (g << 8) | b).toRadixString(16).toUpperCase().padLeft(6, '0')}';
           preview = await PdfEditingService.changeBackgroundColor(
             inputPath: _pdfPath!,
-            hexColor: '#${_selectedBackgroundColor.value.toRadixString(16).padLeft(8, '0').substring(2)}',
+            hexColor: colorHex,
           );
           break;
         case 'compress':
-          preview = await PdfEditingService.compressPdf(
-            inputPath: _pdfPath!,
-          );
+          preview = await PdfEditingService.compressPdf(inputPath: _pdfPath!);
           break;
       }
       if (mounted) {
@@ -231,7 +242,9 @@ class _EditPdfScreenState extends State<EditPdfScreen>
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Text added: ${File(outputPath).path.split('/').last}')),
+        SnackBar(
+          content: Text('Text added: ${File(outputPath).path.split('/').last}'),
+        ),
       );
 
       Navigator.push(
@@ -242,9 +255,9 @@ class _EditPdfScreenState extends State<EditPdfScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() => _isProcessing = false);
     }
@@ -293,7 +306,11 @@ class _EditPdfScreenState extends State<EditPdfScreen>
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Rotated by $angle°: ${File(outputPath).path.split('/').last}')),
+        SnackBar(
+          content: Text(
+            'Rotated by $angle°: ${File(outputPath).path.split('/').last}',
+          ),
+        ),
       );
 
       Navigator.push(
@@ -304,9 +321,9 @@ class _EditPdfScreenState extends State<EditPdfScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() => _isProcessing = false);
     }
@@ -342,9 +359,18 @@ class _EditPdfScreenState extends State<EditPdfScreen>
               DropdownButton<String>(
                 isExpanded: true,
                 value: 'center',
-                items: ['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
+                items:
+                    [
+                          'top-left',
+                          'top-center',
+                          'top-right',
+                          'center',
+                          'bottom-left',
+                          'bottom-center',
+                          'bottom-right',
+                        ]
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
                 onChanged: (v) {},
               ),
               const SizedBox(height: 12),
@@ -360,7 +386,10 @@ class _EditPdfScreenState extends State<EditPdfScreen>
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop({
               'watermark': watermarkController.text,
@@ -387,7 +416,11 @@ class _EditPdfScreenState extends State<EditPdfScreen>
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Watermark added: ${File(outputPath).path.split('/').last}')),
+        SnackBar(
+          content: Text(
+            'Watermark added: ${File(outputPath).path.split('/').last}',
+          ),
+        ),
       );
 
       Navigator.push(
@@ -398,7 +431,9 @@ class _EditPdfScreenState extends State<EditPdfScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() => _isProcessing = false);
     }
@@ -427,18 +462,49 @@ class _EditPdfScreenState extends State<EditPdfScreen>
             children: [
               const Text('Crop dimensions (in points, 1 inch = 72 points):'),
               const SizedBox(height: 12),
-              TextField(controller: leftController, decoration: const InputDecoration(labelText: 'Left', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+              TextField(
+                controller: leftController,
+                decoration: const InputDecoration(
+                  labelText: 'Left',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
               const SizedBox(height: 8),
-              TextField(controller: bottomController, decoration: const InputDecoration(labelText: 'Bottom', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+              TextField(
+                controller: bottomController,
+                decoration: const InputDecoration(
+                  labelText: 'Bottom',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
               const SizedBox(height: 8),
-              TextField(controller: rightController, decoration: const InputDecoration(labelText: 'Right', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+              TextField(
+                controller: rightController,
+                decoration: const InputDecoration(
+                  labelText: 'Right',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
               const SizedBox(height: 8),
-              TextField(controller: topController, decoration: const InputDecoration(labelText: 'Top', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+              TextField(
+                controller: topController,
+                decoration: const InputDecoration(
+                  labelText: 'Top',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop([
               double.parse(leftController.text),
@@ -463,7 +529,11 @@ class _EditPdfScreenState extends State<EditPdfScreen>
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PDF cropped: ${File(outputPath).path.split('/').last}')),
+        SnackBar(
+          content: Text(
+            'PDF cropped: ${File(outputPath).path.split('/').last}',
+          ),
+        ),
       );
 
       Navigator.push(
@@ -474,7 +544,9 @@ class _EditPdfScreenState extends State<EditPdfScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() => _isProcessing = false);
     }
@@ -502,7 +574,10 @@ class _EditPdfScreenState extends State<EditPdfScreen>
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('OK'),
@@ -513,25 +588,35 @@ class _EditPdfScreenState extends State<EditPdfScreen>
 
     setState(() => _isProcessing = true);
     try {
-      _backgroundColorAnimation = ColorTween(
-        begin: _selectedBackgroundColor,
-        end: pickedColor,
-      ).animate(CurvedAnimation(
-        parent: _backgroundColorAnimationController,
-        curve: Curves.easeInOut,
-      ));
+      _backgroundColorAnimation =
+          ColorTween(begin: _selectedBackgroundColor, end: pickedColor).animate(
+            CurvedAnimation(
+              parent: _backgroundColorAnimationController,
+              curve: Curves.easeInOut,
+            ),
+          );
       _backgroundColorAnimationController.forward(from: 0);
+
+      final r = ((pickedColor.r * 255.0).round().clamp(0, 255));
+      final g = ((pickedColor.g * 255.0).round().clamp(0, 255));
+      final b = ((pickedColor.b * 255.0).round().clamp(0, 255));
+      final colorHex =
+          '#${((r << 16) | (g << 8) | b).toRadixString(16).toUpperCase().padLeft(6, '0')}';
 
       final outputPath = await PdfEditingService.changeBackgroundColor(
         inputPath: _pdfPath!,
-        hexColor: '#${pickedColor.value.toRadixString(16).padLeft(8, '0').substring(2)}',
+        hexColor: colorHex,
       );
 
       setState(() => _selectedBackgroundColor = pickedColor);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Background color changed: ${File(outputPath).path.split('/').last}')),
+        SnackBar(
+          content: Text(
+            'Background color changed: ${File(outputPath).path.split('/').last}',
+          ),
+        ),
       );
 
       Navigator.push(
@@ -542,7 +627,9 @@ class _EditPdfScreenState extends State<EditPdfScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() => _isProcessing = false);
     }
@@ -564,7 +651,11 @@ class _EditPdfScreenState extends State<EditPdfScreen>
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PDF compressed: ${File(outputPath).path.split('/').last}')),
+        SnackBar(
+          content: Text(
+            'PDF compressed: ${File(outputPath).path.split('/').last}',
+          ),
+        ),
       );
 
       Navigator.push(
@@ -575,7 +666,9 @@ class _EditPdfScreenState extends State<EditPdfScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() => _isProcessing = false);
     }
@@ -627,10 +720,7 @@ class _EditPdfScreenState extends State<EditPdfScreen>
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    flex: 2,
-                    child: _buildEditPanel(),
-                  ),
+                  Expanded(flex: 2, child: _buildEditPanel()),
                   Expanded(
                     flex: 3,
                     child: Container(
@@ -654,7 +744,7 @@ class _EditPdfScreenState extends State<EditPdfScreen>
                   if (_showPreviewModal && _previewPath != null)
                     Positioned.fill(
                       child: Container(
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withValues(alpha: 0.7),
                         child: Center(
                           child: Material(
                             borderRadius: BorderRadius.circular(16),
@@ -670,7 +760,9 @@ class _EditPdfScreenState extends State<EditPdfScreen>
                                     right: 8,
                                     child: IconButton(
                                       icon: const Icon(Icons.close),
-                                      onPressed: () => setState(() => _showPreviewModal = false),
+                                      onPressed: () => setState(
+                                        () => _showPreviewModal = false,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -694,13 +786,18 @@ class _EditPdfScreenState extends State<EditPdfScreen>
         children: [
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Step 1: Select PDF', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Step 1: Select PDF',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 12),
                   if (_pdfPath == null)
                     ElevatedButton.icon(
@@ -714,13 +811,20 @@ class _EditPdfScreenState extends State<EditPdfScreen>
                       children: [
                         Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           child: Row(
                             children: [
                               const Icon(Icons.article, color: Colors.grey),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Text(_pdfPath!.split('/').last, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+                                child: Text(
+                                  _pdfPath!.split('/').last,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
                               ),
                             ],
                           ),
@@ -739,7 +843,10 @@ class _EditPdfScreenState extends State<EditPdfScreen>
           ),
           const SizedBox(height: 20),
           if (_pdfPath != null) ...[
-            const Text('Step 2: Choose Edit Option', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              'Step 2: Choose Edit Option',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             _EditOptionCard(
               title: 'Add Text',
@@ -792,11 +899,16 @@ class _EditPdfScreenState extends State<EditPdfScreen>
             ElevatedButton.icon(
               onPressed: _isProcessing ? null : _performEdit,
               icon: _isProcessing
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.edit),
               label: Text(_isProcessing ? 'Processing...' : 'Apply Edit'),
             ),
-            if (_previewPath != null && MediaQuery.of(context).size.width <= 900)
+            if (_previewPath != null &&
+                MediaQuery.of(context).size.width <= 900)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
                 child: ElevatedButton.icon(
@@ -811,9 +923,17 @@ class _EditPdfScreenState extends State<EditPdfScreen>
               padding: const EdgeInsets.symmetric(vertical: 40),
               child: Column(
                 children: [
-                  Icon(Icons.description_outlined, size: 80, color: Colors.grey[300]),
+                  Icon(
+                    Icons.description_outlined,
+                    size: 80,
+                    color: Colors.grey[300],
+                  ),
                   const SizedBox(height: 16),
-                  Text('Select a PDF to get started', style: TextStyle(fontSize: 16, color: Colors.grey[600]), textAlign: TextAlign.center),
+                  Text(
+                    'Select a PDF to get started',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),
@@ -856,19 +976,33 @@ class _EditOptionCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(icon, size: 32, color: isSelected ? const Color(0xFFC6302C) : Colors.grey),
+              Icon(
+                icon,
+                size: 32,
+                color: isSelected ? const Color(0xFFC6302C) : Colors.grey,
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(description, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    Text(
+                      description,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
                   ],
                 ),
               ),
-              if (isSelected) const Icon(Icons.check_circle, color: Color(0xFFC6302C)),
+              if (isSelected)
+                const Icon(Icons.check_circle, color: Color(0xFFC6302C)),
             ],
           ),
         ),

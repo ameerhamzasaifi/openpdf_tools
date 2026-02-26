@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:openpdf_tools/config/premium_theme.dart';
 import 'package:openpdf_tools/utils/animation_utils.dart';
 import 'package:openpdf_tools/widgets/premium_components.dart';
-import 'package:openpdf_tools/widgets/premium_navigation.dart';
+import 'package:openpdf_tools/widgets/theme_switcher.dart';
 
 /// Modern premium home screen with feature cards and smooth animations
 class ModernHomeScreen extends StatefulWidget {
@@ -17,7 +17,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
   late ScrollController _scrollController;
   late AnimationController _headerFadeController;
   bool _showHeader = true;
-  
+
   @override
   void initState() {
     super.initState();
@@ -26,10 +26,10 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       duration: AnimationUtils.standard,
       vsync: this,
     );
-    
+
     _scrollController.addListener(_onScroll);
   }
-  
+
   void _onScroll() {
     if (_scrollController.offset > 50) {
       if (_showHeader) {
@@ -43,7 +43,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       }
     }
   }
-  
+
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
@@ -51,15 +51,13 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
     _headerFadeController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark
-          ? PremiumColors.darkBg
-          : PremiumColors.lightBg,
+      backgroundColor: isDark ? PremiumColors.darkBg : PremiumColors.lightBg,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
@@ -71,6 +69,10 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
             elevation: 0,
             pinned: true,
             expandedHeight: 220,
+            actions: [
+              ThemeSwitcher(compact: true),
+              const SizedBox(width: PremiumSpacing.md),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: FadeTransition(
                 opacity: _headerFadeController.drive(
@@ -80,7 +82,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
               ),
             ),
           ),
-          
+
           // Main content
           SliverPadding(
             padding: const EdgeInsets.symmetric(
@@ -92,11 +94,11 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                 // Quick access section
                 _buildQuickAccessSection(context, isDark),
                 const SizedBox(height: PremiumSpacing.xl),
-                
+
                 // Feature cards grid
                 _buildFeatureCardsGrid(context, isDark),
                 const SizedBox(height: PremiumSpacing.xl),
-                
+
                 // Recent files section
                 _buildRecentFilesSection(context, isDark),
                 const SizedBox(height: PremiumSpacing.xl),
@@ -107,14 +109,14 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       ),
     );
   }
-  
+
   Widget _buildHeaderSection(bool isDark) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
             PremiumColors.luxuryRed,
-            PremiumColors.luxuryRed.withOpacity(0.8),
+            PremiumColors.luxuryRed.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -137,17 +139,17 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
               Text(
                 'Manage your PDFs with ease',
                 style: PremiumTypography.bodyMedium.copyWith(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                 ),
               ),
               const SizedBox(height: PremiumSpacing.lg),
               // Search bar in header
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(PremiumSpacing.radiusMd),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
@@ -155,12 +157,12 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                   decoration: InputDecoration(
                     hintText: 'Search files...',
                     hintStyle: PremiumTypography.bodyMedium.copyWith(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                     ),
                     border: InputBorder.none,
                     prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: PremiumSpacing.lg,
@@ -178,7 +180,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       ),
     );
   }
-  
+
   Widget _buildQuickAccessSection(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,9 +188,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
         Text(
           'Quick Access',
           style: PremiumTypography.headlineMedium.copyWith(
-            color: isDark
-                ? PremiumColors.darkText
-                : PremiumColors.lightText,
+            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -231,7 +231,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       ],
     );
   }
-  
+
   Widget _buildQuickActionCard(
     BuildContext context, {
     required IconData icon,
@@ -241,7 +241,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
     return CardAnimations.slideInAnimation(
       offset: const Offset(0.2, 0.2),
       child: PremiumGradientCard(
-        colors: [color, color.withOpacity(0.8)],
+        colors: [color, color.withValues(alpha: 0.8)],
         padding: const EdgeInsets.all(PremiumSpacing.lg),
         onTap: () {
           // Handle tap
@@ -249,11 +249,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: PremiumSpacing.iconXLarge,
-              color: Colors.white,
-            ),
+            Icon(icon, size: PremiumSpacing.iconXLarge, color: Colors.white),
             const SizedBox(height: PremiumSpacing.md),
             Text(
               label,
@@ -267,7 +263,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       ),
     );
   }
-  
+
   Widget _buildFeatureCardsGrid(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,9 +271,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
         Text(
           'Features',
           style: PremiumTypography.headlineMedium.copyWith(
-            color: isDark
-                ? PremiumColors.darkText
-                : PremiumColors.lightText,
+            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -323,7 +317,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       ],
     );
   }
-  
+
   Widget _buildFeatureCard(
     BuildContext context, {
     required IconData icon,
@@ -332,11 +326,9 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
     required int index,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return CardAnimations.slideInAnimation(
-      duration: Duration(
-        milliseconds: 300 + (index * 100),
-      ),
+      duration: Duration(milliseconds: 300 + (index * 100)),
       offset: const Offset(0.0, 0.5),
       child: PremiumCard(
         enableGlassmorphism: true,
@@ -352,7 +344,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
             Container(
               padding: const EdgeInsets.all(PremiumSpacing.lg),
               decoration: BoxDecoration(
-                color: PremiumColors.luxuryRed.withOpacity(0.1),
+                color: PremiumColors.luxuryRed.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(PremiumSpacing.radiusLg),
               ),
               child: Icon(
@@ -385,7 +377,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       ),
     );
   }
-  
+
   Widget _buildRecentFilesSection(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,9 +385,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
         Text(
           'Recent Files',
           style: PremiumTypography.headlineMedium.copyWith(
-            color: isDark
-                ? PremiumColors.darkText
-                : PremiumColors.lightText,
+            color: isDark ? PremiumColors.darkText : PremiumColors.lightText,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -405,13 +395,12 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
           (index) => Padding(
             padding: const EdgeInsets.only(bottom: PremiumSpacing.md),
             child: CardAnimations.slideInAnimation(
-              duration: Duration(
-                milliseconds: 300 + (index * 100),
-              ),
+              duration: Duration(milliseconds: 300 + (index * 100)),
               offset: const Offset(0.2, 0.0),
               child: PremiumListTile(
                 title: 'Document_${index + 1}.pdf',
-                subtitle: '${(index + 1) * 2.5} MB • ${DateTime.now().toString().split(' ')[0]}',
+                subtitle:
+                    '${(index + 1) * 2.5} MB • ${DateTime.now().toString().split(' ')[0]}',
                 leadingIcon: Icons.picture_as_pdf_rounded,
                 trailingIcon: Icons.more_vert,
                 backgroundColor: isDark
