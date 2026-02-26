@@ -409,7 +409,7 @@ We welcome contributions! Here's how to get involved:
 1. **Fork** the repository on GitHub
 2. **Clone** your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/openpdf_tools.git
+   git clone https://github.com/AHS-Mobile-Labs/openpdf_tools.git
    cd openpdf_tools
    ```
 3. **Create** a feature branch:
