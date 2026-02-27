@@ -452,10 +452,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             if (_pdfFile != null)
               Text(
                 '$fileSize MB',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
-                  color: Colors.white70,
+                  color: isDark ? Colors.white70 : Colors.black54,
                 ),
               ),
           ],
@@ -498,7 +498,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                   Icon(
                     Icons.picture_as_pdf,
                     size: 80,
-                    color: Colors.grey.shade300,
+                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -506,7 +506,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade700,
                     ),
                   ),
                   const SizedBox(height: 8),
