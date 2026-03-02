@@ -2,7 +2,7 @@
   <img src="asset/app_img/OpenPDF Tools.png" alt="OpenPDF Tools Logo" width="200" height="200">
 </div>
 
-# 📄 OpenPDF Tools
+# OpenPDF Tools
 
 A professional, feature-rich Flutter application for comprehensive PDF management and manipulation. Seamlessly view, convert, compress, and edit PDF files across **desktop and mobile platforms** with an intuitive and modern interface.
 
