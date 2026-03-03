@@ -526,31 +526,6 @@ This project wouldn't be possible without:
 
 ---
 
-## 🔄 Release History
-
-### v1.0.0 (Current) - Released
-- ✨ Initial public release
-- 🎯 Full PDF viewing and manipulation
-- 🔄 Multi-format conversion support
-- 📱 Cross-platform mobile and desktop
-- 🎨 Modern Material Design interface
-- 🔒 Secure file handling
-
----
-
-## 🚀 Future Roadmap
-
-### Planned Features (Upcoming Releases)
-- [ ] **Dark Mode** - System-wide dark theme support
-- [ ] **Cloud Sync** - Google Drive & Dropbox integration
-- [ ] **Advanced Editing** - Enhanced PDF annotation tools
-- [ ] **Batch Operations** - Convert/compress multiple files
-- [ ] **OCR Support** - Extract text from images and PDFs
-- [ ] **Watermarking** - Add watermarks to PDFs
-- [ ] **Digital Signatures** - Sign documents digitally
-- [ ] **Localization** - Multi-language support (10+ languages)
-- [ ] **Performance** - Further optimization for large files
-
 ---
 
 ## 📧 Get in Touch
