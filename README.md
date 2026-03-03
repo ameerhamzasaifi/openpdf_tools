@@ -506,7 +506,7 @@ This project wouldn't be possible without:
 - **[Flutter Team](https://flutter.dev/)** - Amazing framework for cross-platform development
 - **[Syncfusion](https://www.syncfusion.com/)** - Professional PDF viewer component
 - **[Dart Community](https://dart.dev/community)** - Continuously improving the language
-- **Contributors** - Everyone who reports issues and submits improvements
+- **[Contributors](https://github.com/AHS-Mobile-Labs/openpdf_tools/graphs/contributors)** - Everyone who reports issues and submits improvements
 - **Users** - Your feedback drives development priorities
 
 ---
