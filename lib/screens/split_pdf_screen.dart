@@ -6,6 +6,7 @@ import 'package:openpdf_tools/utils/platform_file_handler.dart';
 import 'package:openpdf_tools/utils/platform_helper.dart';
 
 import '../services/pdf_manipulation_service.dart';
+import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'pdf_viewer_screen.dart';
 
 class SplitPdfScreen extends StatefulWidget {
@@ -99,6 +100,21 @@ class _SplitPdfScreenState extends State<SplitPdfScreen> {
       return;
     }
 
+    // Request permissions before starting split
+    if (PlatformHelper.isAndroid) {
+      final hasPermission =
+          await PlatformFileHandler.requestStoragePermission();
+      if (!hasPermission) {
+        if (mounted) {
+          setState(
+            () => _errorMessage =
+                'Storage permission is required to split PDFs. Please grant permission and try again.',
+          );
+        }
+        return;
+      }
+    }
+
     setState(() => _isProcessing = true);
 
     try {
@@ -160,13 +176,27 @@ class _SplitPdfScreenState extends State<SplitPdfScreen> {
     } catch (e) {
       if (!mounted) return;
 
+      String errorMessage = 'Failed to split PDF: $e';
+
+      // Provide more specific error messages
+      if (e.toString().contains('MissingPluginException')) {
+        errorMessage =
+            'PDF split feature not available on this device. Please try a different method or update the app.';
+      } else if (e.toString().contains('Permission denied')) {
+        errorMessage =
+            'Permission denied: Unable to access PDF files. Please check storage permissions.';
+      } else if (e.toString().contains('File not found')) {
+        errorMessage =
+            'The PDF file could not be accessed. Please select the file again.';
+      }
+
       setState(() {
         _isProcessing = false;
-        _errorMessage = 'Failed to split PDF: $e';
+        _errorMessage = errorMessage;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
       );
     }
   }
@@ -192,6 +222,7 @@ class _SplitPdfScreenState extends State<SplitPdfScreen> {
         elevation: 0,
         backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black,
+        actions: [ThemeSwitcher(compact: true), const SizedBox(width: 8)],
       ),
       body: Container(
         color: isDark ? const Color(0xFF0F0F0F) : const Color(0xFFFAFAFA),

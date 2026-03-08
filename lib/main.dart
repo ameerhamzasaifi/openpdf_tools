@@ -103,6 +103,7 @@ class _OpenPDFToolsAppState extends State<OpenPDFToolsApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   StreamSubscription<List<SharedMediaFile>>? _intentSub;
   late PDFOpenerService _pdfOpenerService;
+  bool _pdfOpenerServiceInitialized = false;
 
   @override
   void initState() {
@@ -159,10 +160,12 @@ class _OpenPDFToolsAppState extends State<OpenPDFToolsApp> {
           await _pdfOpenerService.initialize(
             onPdfFileReceived: _handlePdfFileFromSystem,
           );
+          _pdfOpenerServiceInitialized = true;
           debugPrint(
             '[_OpenPDFToolsAppState] PDF opener service initialized (mobile)',
           );
         } catch (e) {
+          _pdfOpenerServiceInitialized = false;
           debugPrint(
             '[_OpenPDFToolsAppState] Failed to initialize PDF opener (mobile): $e',
           );
@@ -227,8 +230,10 @@ class _OpenPDFToolsAppState extends State<OpenPDFToolsApp> {
         _intentSub?.cancel();
         ReceiveSharingIntent.instance.reset();
       }
-      // Only dispose of PDF opener service if it was initialized
-      _pdfOpenerService.dispose();
+      // Only dispose of PDF opener service if it was successfully initialized
+      if (_pdfOpenerServiceInitialized) {
+        _pdfOpenerService.dispose();
+      }
     } catch (e) {
       debugPrint('[_OpenPDFToolsAppState] Error during dispose: $e');
     }
@@ -380,7 +385,15 @@ class _ResponsiveHomeScreenState extends State<ResponsiveHomeScreen> {
   }
 
   Widget _buildMobileLayout() {
+    final isHome = _selectedIndex == 0;
     return Scaffold(
+      appBar: isHome
+          ? AppBar(
+              title: Text(_appTitle),
+              elevation: 0,
+              actions: [ThemeSwitcher(compact: true), const SizedBox(width: 8)],
+            )
+          : null,
       body: _navigationItems[_selectedIndex].screen,
       bottomNavigationBar: ModernBottomNavigation(
         selectedIndex: _selectedIndex,
@@ -474,11 +487,24 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Future<void> _launchGitHub() async {
     try {
-      if (await canLaunchUrl(Uri.parse(AppConfig.githubUrl))) {
-        await launchUrl(Uri.parse(AppConfig.githubUrl));
+      final uri = Uri.parse(AppConfig.githubUrl);
+      debugPrint('[GitHub] Attempting to launch: ${AppConfig.githubUrl}');
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        debugPrint('[GitHub] URL launched successfully');
+      } else {
+        debugPrint('[GitHub] Cannot launch URL, no browser app found');
+        // Fallback: Try with default launch mode
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
     } catch (e) {
-      debugPrint('Error launching GitHub URL: $e');
+      debugPrint('[GitHub] Error launching URL: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not open GitHub: $e')));
+      }
     }
   }
 

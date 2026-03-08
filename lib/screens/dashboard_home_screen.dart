@@ -13,6 +13,7 @@ import 'pdf_from_images_screen.dart';
 import 'merge_pdf_screen.dart';
 import 'split_pdf_screen.dart';
 import 'sign_pdf_screen_refactored.dart';
+import 'repair_pdf_screen.dart';
 
 /// Modern, clean dashboard home screen with improved UX
 class DashboardHomeScreen extends StatefulWidget {
@@ -25,11 +26,24 @@ class DashboardHomeScreen extends StatefulWidget {
 class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
   Future<void> _launchGitHub() async {
     try {
-      if (await canLaunchUrl(Uri.parse(AppConfig.githubUrl))) {
-        await launchUrl(Uri.parse(AppConfig.githubUrl));
+      final uri = Uri.parse(AppConfig.githubUrl);
+      debugPrint('[GitHub] Attempting to launch: ${AppConfig.githubUrl}');
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        debugPrint('[GitHub] URL launched successfully');
+      } else {
+        debugPrint('[GitHub] Cannot launch URL, no browser app found');
+        // Fallback: Try with default launch mode
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
     } catch (e) {
-      debugPrint('Error launching GitHub URL: $e');
+      debugPrint('[GitHub] Error launching URL: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not open GitHub: $e')));
+      }
     }
   }
 
@@ -443,6 +457,13 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
         icon: Icons.edit_document,
         color: const Color(0xFF0D47A1),
         screen: const SignPdfScreenRefactored(),
+      ),
+      FeatureItem(
+        title: 'Repair PDF',
+        description: 'Fix corrupted PDFs',
+        icon: Icons.healing,
+        color: const Color(0xFFC62828),
+        screen: const RepairPdfScreen(),
       ),
     ];
 

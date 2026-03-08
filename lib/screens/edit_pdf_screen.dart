@@ -6,6 +6,7 @@ import 'package:openpdf_tools/utils/platform_helper.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:openpdf_tools/services/pdf_editing_service.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'pdf_viewer_screen.dart';
 
 class EditPdfScreen extends StatefulWidget {
@@ -731,6 +732,7 @@ class _EditPdfScreenState extends State<EditPdfScreen>
         elevation: 0,
         backgroundColor: isDark ? const Color(0xFF1C1C1C) : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black87,
+        actions: [ThemeSwitcher(compact: true), const SizedBox(width: 8)],
       ),
       body: AnimatedBuilder(
         animation: _backgroundColorAnimation,

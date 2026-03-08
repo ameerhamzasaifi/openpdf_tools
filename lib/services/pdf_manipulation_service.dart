@@ -1,7 +1,11 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 class PdfManipulationService {
+  static const platform = MethodChannel('com.openpdf.tools/pdfManipulation');
+
   /// Merge multiple PDF files into a single PDF
   ///
   /// Takes a list of PDF file paths and combines them in order
@@ -17,8 +21,18 @@ class PdfManipulationService {
 
     try {
       final tempDir = await getTemporaryDirectory();
+
+      // Ensure temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
+      }
+
       final outputPath =
           '${tempDir.path}/merged_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+      debugPrint(
+        '[PdfManipulation] Merging ${pdfPaths.length} PDFs to: $outputPath',
+      );
 
       // Verify all files exist
       for (final pdfPath in pdfPaths) {
@@ -28,28 +42,46 @@ class PdfManipulationService {
         }
       }
 
-      // Try using qpdf if available (preferred for PDF manipulation)
-      final qpdfResult = await _tryMergeWithQpdf(pdfPaths, outputPath);
-      if (qpdfResult != null) {
-        return qpdfResult;
+      // Use native Android method if available
+      if (Platform.isAndroid) {
+        try {
+          final result = await platform.invokeMethod<String>('mergePdfs', {
+            'inputPaths': pdfPaths,
+            'outputPath': outputPath,
+          });
+          if (result != null && result.isNotEmpty) {
+            return result;
+          }
+        } catch (e) {
+          debugPrint('[PdfManipulation] Native merge failed: $e');
+          throw Exception('Failed to merge PDFs: $e');
+        }
+      } else {
+        // Fallback: try using qpdf if available (preferred for PDF manipulation)
+        final qpdfResult = await _tryMergeWithQpdf(pdfPaths, outputPath);
+        if (qpdfResult != null) {
+          return qpdfResult;
+        }
+
+        // Fallback: try pdftk
+        final pdfttkResult = await _tryMergeWithPdftk(pdfPaths, outputPath);
+        if (pdfttkResult != null) {
+          return pdfttkResult;
+        }
+
+        // If no command-line tools available, use pdfbox or gs
+        final gsResult = await _tryMergeWithGhostscript(pdfPaths, outputPath);
+        if (gsResult != null) {
+          return gsResult;
+        }
+
+        throw Exception(
+          'No PDF manipulation tools found. '
+          'Please install qpdf, pdftk, or ghostscript.',
+        );
       }
 
-      // Fallback: try pdftk
-      final pdfttkResult = await _tryMergeWithPdftk(pdfPaths, outputPath);
-      if (pdfttkResult != null) {
-        return pdfttkResult;
-      }
-
-      // If no command-line tools available, use pdfbox or gs
-      final gsResult = await _tryMergeWithGhostscript(pdfPaths, outputPath);
-      if (gsResult != null) {
-        return gsResult;
-      }
-
-      throw Exception(
-        'No PDF manipulation tools found. '
-        'Please install qpdf, pdftk, or ghostscript.',
-      );
+      throw Exception('Failed to merge PDFs: Unknown error');
     } catch (e) {
       throw Exception('Failed to merge PDFs: $e');
     }
@@ -103,6 +135,12 @@ class PdfManipulationService {
     String outputPath,
   ) async {
     try {
+      // Ensure output directory exists
+      final outDir = File(outputPath).parent;
+      if (!await outDir.exists()) {
+        await outDir.create(recursive: true);
+      }
+
       final args = [
         '-sDEVICE=pdfwrite',
         '-dNOPAUSE',
@@ -153,44 +191,68 @@ class PdfManipulationService {
 
       final tempDir = await getTemporaryDirectory();
 
-      if (pages != null && pages.isNotEmpty) {
-        // Extract specific pages as individual PDFs
-        final outputPaths = <String>[];
-        for (final pageNum in pages) {
-          final outputPath =
-              '${tempDir.path}/page_${pageNum}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-          final success = await _extractPagesTool(pdfPath, outputPath, [
-            pageNum,
-          ]);
-          if (success) {
-            outputPaths.add(outputPath);
-          }
-        }
-        if (outputPaths.isEmpty) {
-          throw Exception('Failed to extract pages');
-        }
-        return outputPaths;
-      } else {
-        // Extract all pages individually by getting page count first
-        final pageCount = await _getPageCount(pdfPath);
-        if (pageCount <= 0) {
-          throw Exception('Could not determine PDF page count');
-        }
-
-        final outputPaths = <String>[];
-        for (int i = 1; i <= pageCount; i++) {
-          final outputPath =
-              '${tempDir.path}/page_${i}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-          final success = await _extractPagesTool(pdfPath, outputPath, [i]);
-          if (success) {
-            outputPaths.add(outputPath);
-          }
-        }
-        if (outputPaths.isEmpty) {
-          throw Exception('Failed to extract pages');
-        }
-        return outputPaths;
+      // Ensure temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
       }
+
+      // Use native Android method if available
+      if (Platform.isAndroid) {
+        try {
+          final result = await platform.invokeMethod<List<dynamic>>(
+            'splitPdf',
+            {'inputPath': pdfPath, 'outputDir': tempDir.path},
+          );
+          if (result != null && result.isNotEmpty) {
+            return result.cast<String>();
+          }
+        } catch (e) {
+          debugPrint('[PdfManipulation] Native split failed: $e');
+          throw Exception('Failed to split PDF: $e');
+        }
+      } else {
+        // Desktop fallback
+        if (pages != null && pages.isNotEmpty) {
+          // Extract specific pages as individual PDFs
+          final outputPaths = <String>[];
+          for (final pageNum in pages) {
+            final outputPath =
+                '${tempDir.path}/page_${pageNum}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+            final success = await _extractPagesTool(pdfPath, outputPath, [
+              pageNum,
+            ]);
+            if (success) {
+              outputPaths.add(outputPath);
+            }
+          }
+          if (outputPaths.isEmpty) {
+            throw Exception('Failed to extract pages');
+          }
+          return outputPaths;
+        } else {
+          // Extract all pages individually by getting page count first
+          final pageCount = await _getPageCount(pdfPath);
+          if (pageCount <= 0) {
+            throw Exception('Could not determine PDF page count');
+          }
+
+          final outputPaths = <String>[];
+          for (int i = 1; i <= pageCount; i++) {
+            final outputPath =
+                '${tempDir.path}/page_${i}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+            final success = await _extractPagesTool(pdfPath, outputPath, [i]);
+            if (success) {
+              outputPaths.add(outputPath);
+            }
+          }
+          if (outputPaths.isEmpty) {
+            throw Exception('Failed to extract pages');
+          }
+          return outputPaths;
+        }
+      }
+
+      throw Exception('Failed to split PDF: Unknown error');
     } catch (e) {
       throw Exception('Failed to split PDF: $e');
     }
@@ -219,21 +281,48 @@ class PdfManipulationService {
       }
 
       final tempDir = await getTemporaryDirectory();
+
+      // Ensure temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
+      }
+
       final outputPath =
           '${tempDir.path}/extracted_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      // Create a list of pages to extract
-      final pages = List.generate(
-        endPage - startPage + 1,
-        (i) => startPage + i,
-      );
+      // Use native Android method if available
+      if (Platform.isAndroid) {
+        try {
+          final result = await platform.invokeMethod<String>('splitPdfRange', {
+            'inputPath': pdfPath,
+            'startPage': startPage,
+            'endPage': endPage,
+            'outputPath': outputPath,
+          });
+          if (result != null && result.isNotEmpty) {
+            return result;
+          }
+        } catch (e) {
+          debugPrint('[PdfManipulation] Native split range failed: $e');
+          throw Exception('Failed to split PDF range: $e');
+        }
+      } else {
+        // Desktop fallback
+        // Create a list of pages to extract
+        final pages = List.generate(
+          endPage - startPage + 1,
+          (i) => startPage + i,
+        );
 
-      final success = await _extractPagesTool(pdfPath, outputPath, pages);
-      if (!success) {
-        throw Exception('Failed to extract page range');
+        final success = await _extractPagesTool(pdfPath, outputPath, pages);
+        if (!success) {
+          throw Exception('Failed to extract page range');
+        }
+
+        return outputPath;
       }
 
-      return outputPath;
+      throw Exception('Failed to split PDF range: Unknown error');
     } catch (e) {
       throw Exception('Failed to split PDF range: $e');
     }
@@ -306,6 +395,12 @@ class PdfManipulationService {
     List<int> pages,
   ) async {
     try {
+      // Ensure output directory exists
+      final outDir = File(outputPath).parent;
+      if (!await outDir.exists()) {
+        await outDir.create(recursive: true);
+      }
+
       final args = [
         '-sDEVICE=pdfwrite',
         '-dNOPAUSE',
@@ -327,33 +422,50 @@ class PdfManipulationService {
   /// Get the page count of a PDF
   static Future<int> _getPageCount(String pdfPath) async {
     try {
-      // Try using pdfinfo (from poppler-utils)
-      final result = await Process.run('pdfinfo', [pdfPath]);
-      if (result.exitCode == 0) {
-        final lines = result.stdout.toString().split('\n');
-        for (final line in lines) {
-          if (line.contains('Pages:')) {
-            final pages = line.replaceAll(RegExp(r'[^\d]'), '');
-            return int.tryParse(pages) ?? 0;
+      // Use native Android method if available
+      if (Platform.isAndroid) {
+        try {
+          final result = await platform.invokeMethod<int>('getPageCount', {
+            'inputPath': pdfPath,
+          });
+          if (result != null && result > 0) {
+            return result;
+          }
+        } catch (e) {
+          debugPrint('[PdfManipulation] Native page count failed: $e');
+        }
+      } else {
+        // Desktop fallback - Try using pdfinfo (from poppler-utils)
+        final result = await Process.run('pdfinfo', [pdfPath]);
+        if (result.exitCode == 0) {
+          final lines = result.stdout.toString().split('\n');
+          for (final line in lines) {
+            if (line.contains('Pages:')) {
+              final pages = line.replaceAll(RegExp(r'[^\d]'), '');
+              return int.tryParse(pages) ?? 0;
+            }
           }
         }
-      }
 
-      // Fallback: try using qpdf to get page count
-      final qpdfResult = await Process.run('qpdf', ['--show-npages', pdfPath]);
-      if (qpdfResult.exitCode == 0) {
-        final count = int.tryParse(qpdfResult.stdout.toString().trim());
-        return count ?? 0;
-      }
+        // Fallback: try using qpdf to get page count
+        final qpdfResult = await Process.run('qpdf', [
+          '--show-npages',
+          pdfPath,
+        ]);
+        if (qpdfResult.exitCode == 0) {
+          final count = int.tryParse(qpdfResult.stdout.toString().trim());
+          return count ?? 0;
+        }
 
-      // Fallback: try identify from ImageMagick
-      final identifyResult = await Process.run('identify', [pdfPath]);
-      if (identifyResult.exitCode == 0) {
-        final output = identifyResult.stdout.toString();
-        final matches = RegExp(r'(\d+)\]').allMatches(output);
-        if (matches.isNotEmpty) {
-          final lastMatch = matches.last.group(1);
-          return int.tryParse(lastMatch ?? '1') ?? 1;
+        // Fallback: try identify from ImageMagick
+        final identifyResult = await Process.run('identify', [pdfPath]);
+        if (identifyResult.exitCode == 0) {
+          final output = identifyResult.stdout.toString();
+          final matches = RegExp(r'(\d+)\]').allMatches(output);
+          if (matches.isNotEmpty) {
+            final lastMatch = matches.last.group(1);
+            return int.tryParse(lastMatch ?? '1') ?? 1;
+          }
         }
       }
 

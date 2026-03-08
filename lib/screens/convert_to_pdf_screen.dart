@@ -5,11 +5,11 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as Path;
+import 'package:path/path.dart' as path;
 import 'package:openpdf_tools/widgets/in_app_file_picker.dart';
-import 'package:openpdf_tools/utils/platform_file_handler.dart';
 import 'package:openpdf_tools/utils/platform_helper.dart';
-import '../config/app_config.dart';
+import 'package:openpdf_tools/utils/platform_file_handler.dart';
+import 'package:openpdf_tools/config/app_config.dart';
 import 'pdf_viewer_screen.dart';
 
 class ConvertToPdfScreen extends StatefulWidget {
@@ -187,9 +187,10 @@ class _ConvertToPdfScreenState extends State<ConvertToPdfScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final fileExtension = Path.extension(
-        _selectedFile!.path,
-      ).replaceFirst('.', '').toLowerCase();
+      final fileExtension = path
+          .extension(_selectedFile!.path)
+          .replaceFirst('.', '')
+          .toLowerCase();
       String? outputPath;
 
       if ([
@@ -267,7 +268,7 @@ class _ConvertToPdfScreenState extends State<ConvertToPdfScreen> {
       );
 
       final tempDir = await getTemporaryDirectory();
-      final outputPath = Path.join(
+      final outputPath = path.join(
         tempDir.path,
         'converted_${DateTime.now().millisecondsSinceEpoch}.pdf',
       );
@@ -304,7 +305,7 @@ class _ConvertToPdfScreenState extends State<ConvertToPdfScreen> {
       }
 
       final tempDir = await getTemporaryDirectory();
-      final outputPath = Path.join(
+      final outputPath = path.join(
         tempDir.path,
         'converted_${DateTime.now().millisecondsSinceEpoch}.pdf',
       );
@@ -330,7 +331,7 @@ class _ConvertToPdfScreenState extends State<ConvertToPdfScreen> {
     }
 
     final tempDir = await getTemporaryDirectory();
-    final filename = Path.basenameWithoutExtension(sourceFile.path);
+    final filename = path.basenameWithoutExtension(sourceFile.path);
 
     // Build the LibreOffice command based on platform
     final command = Platform.isWindows ? 'soffice' : 'libreoffice';
@@ -346,7 +347,7 @@ class _ConvertToPdfScreenState extends State<ConvertToPdfScreen> {
       ]);
 
       if (result.exitCode == 0) {
-        final convertedFile = File(Path.join(tempDir.path, '$filename.pdf'));
+        final convertedFile = File(path.join(tempDir.path, '$filename.pdf'));
         if (await convertedFile.exists()) return convertedFile.path;
       }
 
@@ -407,7 +408,7 @@ class _ConvertToPdfScreenState extends State<ConvertToPdfScreen> {
       );
 
       final tempDir = await getTemporaryDirectory();
-      final outputPath = Path.join(
+      final outputPath = path.join(
         tempDir.path,
         'converted_${DateTime.now().millisecondsSinceEpoch}.pdf',
       );
@@ -474,7 +475,7 @@ class _ConvertToPdfScreenState extends State<ConvertToPdfScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('✓ ${Path.basename(filePath)} ($sizeInMB MB)'),
+        content: Text('✓ ${path.basename(filePath)} ($sizeInMB MB)'),
         duration: const Duration(seconds: 2),
       ),
     );

@@ -9,6 +9,9 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     
+    <!-- MANAGE_EXTERNAL_STORAGE for full file access on Android 11+ (scoped storage) -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    
     <!-- Camera permission for image capture -->
     <uses-permission android:name="android.permission.CAMERA" />
     
@@ -115,6 +118,15 @@
         <intent>
             <action android:name="android.intent.action.SEND_MULTIPLE"/>
             <data android:mimeType="application/pdf"/>
+        </intent>
+        <!-- Web browser intent for opening URLs -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
         </intent>
     </queries>
 </manifest>

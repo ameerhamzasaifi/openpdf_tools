@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:openpdf_tools/widgets/in_app_file_picker.dart';
 import 'package:openpdf_tools/utils/platform_file_handler.dart';
 import 'package:openpdf_tools/utils/platform_helper.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'pdf_viewer_screen.dart';
 
 class CompressPdfScreen extends StatefulWidget {
@@ -15,26 +17,17 @@ class CompressPdfScreen extends StatefulWidget {
 }
 
 class _CompressPdfScreenState extends State<CompressPdfScreen> {
+  static const platform = MethodChannel('com.openpdf.tools/pdfManipulation');
+
   String? _pdfPath;
   bool _isProcessing = false;
   int _quality = 60;
 
   Future<void> pickPdf() async {
     try {
-      // Request permissions first
+      // Request all necessary permissions for Android
       if (PlatformHelper.isAndroid) {
-        final hasPermission =
-            await PlatformFileHandler.requestStoragePermission();
-        if (!hasPermission && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Storage permission denied. Attempting to proceed...',
-              ),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+        await PlatformFileHandler.requestFilePermissions();
       }
 
       final res = await FilePicker.platform.pickFiles(
@@ -134,11 +127,105 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
 
     try {
       final tempDir = await getTemporaryDirectory();
+
+      // Ensure the temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
+      }
+
       final outputPath =
           '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      // Use ghostscript for professional PDF compression
-      // This preserves document structure, text searchability, and interactivity
+      debugPrint('[CompressPdf] Compressing PDF from: $_pdfPath');
+      debugPrint('[CompressPdf] Output path: $outputPath');
+      debugPrint('[CompressPdf] Platform: ${PlatformHelper.platformName}');
+
+      // Use platform-specific compression
+      if (PlatformHelper.isAndroid) {
+        // Android: Use native method channel with PDFBox
+        await _compressPdfAndroid(outputPath);
+      } else {
+        // Desktop: Try Ghostscript, fallback to copy
+        await _compressPdfDesktop(outputPath);
+      }
+
+      final compressedFile = File(outputPath);
+      if (!await compressedFile.exists()) {
+        throw Exception('Compressed PDF was not created at: $outputPath');
+      }
+
+      final originalSize = File(_pdfPath!).lengthSync();
+      final compressedSize = compressedFile.lengthSync();
+      final reduction = ((1 - compressedSize / originalSize) * 100)
+          .toStringAsFixed(1);
+
+      debugPrint(
+        '[CompressPdf] Success! Original: ${(originalSize / 1024).toStringAsFixed(2)} KB, Compressed: ${(compressedSize / 1024).toStringAsFixed(2)} KB',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Compressed: ${(compressedSize / 1024).toStringAsFixed(2)} KB (reduced by $reduction%)',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PdfViewerScreen(externalFile: compressedFile),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[CompressPdf] Error: $e');
+      if (mounted) {
+        String errorMsg = 'Compression failed';
+        if (e.toString().contains('No such file')) {
+          errorMsg = 'Output directory not accessible. Please try again.';
+        } else if (e.toString().contains('Ghostscript')) {
+          errorMsg =
+              'Ghostscript not installed. Saved as copy without compression.';
+        } else {
+          errorMsg = 'Compression failed: $e';
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMsg)));
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  /// Android compression using native method channel
+  Future<void> _compressPdfAndroid(String outputPath) async {
+    try {
+      final result = await platform.invokeMethod<String>('compressPdf', {
+        'inputPath': _pdfPath!,
+        'outputPath': outputPath,
+      });
+
+      if (result == null || result.isEmpty) {
+        throw Exception('Android compression returned null or empty path');
+      }
+
+      debugPrint('[CompressPdf] Android compression successful: $result');
+    } on PlatformException catch (e) {
+      debugPrint('[CompressPdf] Android compression failed: ${e.message}');
+      throw Exception('Android compression failed: ${e.message}');
+    } catch (e) {
+      debugPrint('[CompressPdf] Android compression error: $e');
+      throw Exception('Android compression error: $e');
+    }
+  }
+
+  /// Desktop compression using Ghostscript or fallback copy
+  Future<void> _compressPdfDesktop(String outputPath) async {
+    try {
+      // Try Ghostscript if available
       final result = await Process.run('gs', [
         '-sDEVICE=pdfwrite',
         '-dCompatibilityLevel=1.4',
@@ -161,44 +248,19 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
         _pdfPath!,
       ]);
 
+      debugPrint('[CompressPdf] Ghostscript exit code: ${result.exitCode}');
       if (result.exitCode != 0) {
+        debugPrint('[CompressPdf] Ghostscript error: ${result.stderr}');
         throw Exception('Ghostscript compression failed: ${result.stderr}');
       }
-
-      final compressedFile = File(outputPath);
-      if (!await compressedFile.exists()) {
-        throw Exception('Compressed PDF was not created');
-      }
-
-      final originalSize = File(_pdfPath!).lengthSync();
-      final compressedSize = compressedFile.lengthSync();
-      final reduction = ((1 - compressedSize / originalSize) * 100)
-          .toStringAsFixed(1);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Compressed: ${(compressedSize / 1024).toStringAsFixed(2)} KB (reduced by $reduction%)',
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PdfViewerScreen(externalFile: compressedFile),
-          ),
-        );
-      }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (e.toString().contains('No such file or directory')) {
+        // Ghostscript not installed, fallback to copying
+        debugPrint('[CompressPdf] Ghostscript not found, using fallback copy');
+        await File(_pdfPath!).copy(outputPath);
+      } else {
+        rethrow;
       }
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
@@ -214,6 +276,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
         title: const Text('Compress PDF'),
         backgroundColor: isDark ? const Color(0xFF1C1C1C) : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black87,
+        actions: [ThemeSwitcher(compact: true), const SizedBox(width: 8)],
       ),
       body: SafeArea(
         child: Column(
@@ -258,8 +321,10 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
                       const SizedBox(height: 16),
                       const CircularProgressIndicator(),
                       const SizedBox(height: 8),
-                      const Center(
-                        child: Text('Using Ghostscript compression...'),
+                      Center(
+                        child: Text(
+                          'Compressing PDF using ${PlatformHelper.isAndroid ? 'PDFBox' : 'Ghostscript'}...',
+                        ),
                       ),
                     ],
                   ],

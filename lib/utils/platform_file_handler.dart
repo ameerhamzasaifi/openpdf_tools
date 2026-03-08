@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
@@ -77,6 +78,27 @@ class PlatformFileHandler {
     }
   }
 
+  /// Request MANAGE_EXTERNAL_STORAGE permission for Android 11+
+  static Future<bool> requestManageExternalStoragePermission() async {
+    if (!PlatformHelper.isAndroid) return true;
+
+    try {
+      debugPrint(
+        '[PlatformFileHandler] Requesting MANAGE_EXTERNAL_STORAGE permission',
+      );
+      final status = await Permission.manageExternalStorage.request();
+      debugPrint(
+        '[PlatformFileHandler] MANAGE_EXTERNAL_STORAGE status: $status',
+      );
+      return status.isGranted;
+    } catch (e) {
+      debugPrint(
+        '[PlatformFileHandler] Error requesting manage external storage: $e',
+      );
+      return false;
+    }
+  }
+
   /// Request all necessary permissions for the app
   static Future<bool> requestFilePermissions() async {
     if (!PlatformHelper.isMobile) return true;
@@ -89,11 +111,17 @@ class PlatformFileHandler {
         // Request media permissions for Android 13+
         await requestMediaPermissions();
 
-        return storageGranted;
+        // Request MANAGE_EXTERNAL_STORAGE for Android 11+ (scoped storage)
+        final manageStorageGranted =
+            await requestManageExternalStoragePermission();
+
+        // Return true if any permission was granted
+        return storageGranted || manageStorageGranted;
       } else if (PlatformHelper.isIOS) {
         return await requestMediaLibraryAccess();
       }
     } catch (e) {
+      debugPrint('[PlatformFileHandler] Error requesting file permissions: $e');
       return false;
     }
     return true;

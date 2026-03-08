@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:openpdf_tools/utils/platform_file_handler.dart';
 import 'package:openpdf_tools/utils/platform_helper.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as pathLib;
 import 'package:openpdf_tools/widgets/in_app_file_picker.dart';
+import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'pdf_viewer_screen.dart';
 
 // ignore: use_build_context_synchronously
@@ -21,6 +24,8 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
   String? _selectedPdfPath;
   String? _selectedFormat;
 
+  static const platform =
+      MethodChannel('com.openpdf.tools/pdfManipulation');
   // All conversion formats
   static const List<ConversionFormat> conversionFormats = [
     ConversionFormat(
@@ -327,7 +332,7 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
       }
 
       final fileName =
-          '${Path.basename(_selectedPdfPath!).replaceAll('.pdf', '')}_converted.${format.fileExtension}';
+          '${pathLib.basename(_selectedPdfPath!).replaceAll('.pdf', '')}_converted.${format.fileExtension}';
       final outputPath = '${outputDir.path}/$fileName';
 
       // Call conversion based on format
@@ -427,13 +432,35 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
   }
 
   Future<void> _convertToText(String outputPath) async {
-    final result = await Process.run('pdftotext', [
-      _selectedPdfPath!,
-      outputPath,
-    ]);
+    // Ensure output directory exists
+    final outDir = File(outputPath).parent;
+    if (!await outDir.exists()) {
+      await outDir.create(recursive: true);
+    }
 
-    if (result.exitCode != 0) {
-      throw Exception('Text conversion failed: ${result.stderr}');
+    if (Platform.isAndroid) {
+      // Android: Use method channel to extract text via PDFBox
+      try {
+        final result = await platform.invokeMethod<String>('extractText', {
+          'inputPath': _selectedPdfPath!,
+          'outputPath': outputPath,
+        });
+        if (result == null || result.isEmpty) {
+          throw Exception('Failed to extract text from PDF');
+        }
+      } catch (e) {
+        throw Exception('Text extraction failed: $e');
+      }
+    } else {
+      // Desktop: Use command-line tool
+      final result = await Process.run('pdftotext', [
+        _selectedPdfPath!,
+        outputPath,
+      ]);
+
+      if (result.exitCode != 0) {
+        throw Exception('Text conversion failed: ${result.stderr}');
+      }
     }
   }
 
@@ -441,7 +468,6 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
     ConversionFormat format,
     String outputPath,
   ) async {
-    // Create a temporary directory for image processing, but ensure it's cleaned up
     final tempDir = await getTemporaryDirectory();
     final imageDir =
         '${tempDir.path}/pdf_images_${DateTime.now().millisecondsSinceEpoch}';
@@ -451,7 +477,7 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
       String imageFormat = '';
       switch (format.format) {
         case 'JPG':
-          imageFormat = 'jpeg';
+          imageFormat = 'jpg';
           break;
         case 'PNG':
           imageFormat = 'png';
@@ -463,28 +489,59 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
           imageFormat = 'png';
       }
 
-      final result = await Process.run('pdftoppm', [
-        '-$imageFormat',
-        '-r',
-        '150',
-        _selectedPdfPath!,
-        '$imageDir/page',
-      ]);
+      if (Platform.isAndroid) {
+        // Android: Use method channel to render PDF pages as images
+        try {
+          final result = await platform.invokeMethod<List<dynamic>>('pdfToImages', {
+            'inputPath': _selectedPdfPath!,
+            'outputDir': imageDir,
+            'format': imageFormat,
+            'quality': 150,
+          });
+          if (result == null || result.isEmpty) {
+            throw Exception('Failed to convert PDF to images');
+          }
+        } catch (e) {
+          throw Exception('Image conversion failed: $e');
+        }
+      } else {
+        // Desktop: Use pdftoppm command
+        final result = await Process.run('pdftoppm', [
+          '-$imageFormat',
+          '-r',
+          '150',
+          _selectedPdfPath!,
+          '$imageDir/page',
+        ]);
 
-      if (result.exitCode != 0) {
-        throw Exception('Image conversion failed: ${result.stderr}');
+        if (result.exitCode != 0) {
+          throw Exception('Image conversion failed: ${result.stderr}');
+        }
       }
 
       // If format is Images, zip all images
       if (format.format == 'Images') {
-        final zipResult = await Process.run('zip', [
-          '-r',
-          outputPath,
-          imageDir,
-        ]);
+        if (Platform.isAndroid) {
+          // Android: use method channel for zipping
+          try {
+            await platform.invokeMethod<String>('zipDirectory', {
+              'inputDir': imageDir,
+              'outputPath': outputPath,
+            });
+          } catch (e) {
+            throw Exception('Zip creation failed: $e');
+          }
+        } else {
+          // Desktop: use zip command
+          final zipResult = await Process.run('zip', [
+            '-r',
+            outputPath,
+            imageDir,
+          ]);
 
-        if (zipResult.exitCode != 0) {
-          throw Exception('Zip creation failed: ${zipResult.stderr}');
+          if (zipResult.exitCode != 0) {
+            throw Exception('Zip creation failed: ${zipResult.stderr}');
+          }
         }
       }
     } finally {
@@ -501,8 +558,20 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
     ConversionFormat format,
     String outputPath,
   ) async {
+    if (Platform.isAndroid) {
+      // Android: Office formats not directly supported - offer web alternative
+      _showWebConversionDialog(format);
+      throw Exception('Please use the browser-based conversion service');
+    }
+
     final outDir = Directory(outputPath).parent.path;
-    final outFileName = Path.basename(
+
+    // Ensure output directory exists before LibreOffice tries to use it
+    if (!await Directory(outDir).exists()) {
+      await Directory(outDir).create(recursive: true);
+    }
+
+    final outFileName = pathLib.basename(
       _selectedPdfPath!,
     ).replaceAll(RegExp(r'\.[^.]*$'), '');
 
@@ -554,35 +623,100 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
   }
 
   Future<void> _convertToSecurePdf(String outputPath) async {
-    // For secure PDF (password protected), we'll use qpdf
-    final result = await Process.run('qpdf', [
-      '--encrypt',
-      'userpassword',
-      'ownerpassword',
-      '256',
-      '--',
-      _selectedPdfPath!,
-      outputPath,
-    ]);
+    final outDir = File(outputPath).parent;
+    if (!await outDir.exists()) {
+      await outDir.create(recursive: true);
+    }
 
-    if (result.exitCode != 0) {
-      throw Exception('Secure PDF creation failed: ${result.stderr}');
+    if (Platform.isAndroid) {
+      // Android: Use method channel to encrypt PDF using PDFBox
+      try {
+        final result = await platform.invokeMethod<String>('encryptPdf', {
+          'inputPath': _selectedPdfPath!,
+          'outputPath': outputPath,
+          'userPassword': 'user',
+          'ownerPassword': 'owner',
+        });
+        if (result == null || result.isEmpty) {
+          throw Exception('Failed to create secure PDF');
+        }
+      } catch (e) {
+        throw Exception('Secure PDF creation failed: $e');
+      }
+    } else {
+      // Desktop: Use qpdf command
+      final result = await Process.run('qpdf', [
+        '--encrypt',
+        'userpassword',
+        'ownerpassword',
+        '256',
+        '--',
+        _selectedPdfPath!,
+        outputPath,
+      ]);
+
+      if (result.exitCode != 0) {
+        throw Exception('Secure PDF creation failed: ${result.stderr}');
+      }
     }
   }
 
   Future<void> _convertToPdfA(String outputPath) async {
-    // PDF/A conversion using ghostscript
-    final result = await Process.run('gs', [
-      '-sDEVICE=pdfwrite',
-      '-dPDFA=1',
-      '-sOutputFile=$outputPath',
-      '-f',
-      _selectedPdfPath!,
-    ]);
-
-    if (result.exitCode != 0) {
-      throw Exception('PDF/A conversion failed: ${result.stderr}');
+    final outDir = File(outputPath).parent;
+    if (!await outDir.exists()) {
+      await outDir.create(recursive: true);
     }
+
+    if (Platform.isAndroid) {
+      // Android: Create PDF/A compliant PDF using method channel
+      try {
+        final result = await platform.invokeMethod<String>('createPdfA', {
+          'inputPath': _selectedPdfPath!,
+          'outputPath': outputPath,
+        });
+        if (result == null || result.isEmpty) {
+          throw Exception('Failed to create PDF/A');
+        }
+      } catch (e) {
+        throw Exception('PDF/A conversion failed: $e');
+      }
+    } else {
+      // Desktop: PDF/A conversion using ghostscript
+      final result = await Process.run('gs', [
+        '-sDEVICE=pdfwrite',
+        '-dPDFA=1',
+        '-sOutputFile=$outputPath',
+        '-f',
+        _selectedPdfPath!,
+      ]);
+
+      if (result.exitCode != 0) {
+        throw Exception('PDF/A conversion failed: ${result.stderr}');
+      }
+    }
+  }
+
+  void _showWebConversionDialog(ConversionFormat format) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${format.format} Conversion'),
+        content: Text(
+          'PDF to ${format.format} conversion requires a desktop application or online service.\n\n'
+          'Recommended online converters:\n'
+          '• CloudConvert.com\n'
+          '• Zamzar.com\n'
+          '• AnyConv.com\n\n'
+          'Or use LibreOffice on Windows/macOS/Linux.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -598,6 +732,7 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
         backgroundColor: isDark ? const Color(0xFF1C1C1C) : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black87,
         elevation: 0,
+        actions: [ThemeSwitcher(compact: true), const SizedBox(width: 8)],
       ),
       body: Column(
         children: [
@@ -629,7 +764,7 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
                           ),
                         ),
                         Text(
-                          Path.basename(_selectedPdfPath!),
+                          pathLib.basename(_selectedPdfPath!),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 12),

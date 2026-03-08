@@ -6,6 +6,7 @@ import 'package:openpdf_tools/utils/platform_helper.dart';
 
 import '../services/pdf_manipulation_service.dart';
 import '../config/app_config.dart';
+import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'pdf_viewer_screen.dart';
 
 class MergePdfScreen extends StatefulWidget {
@@ -200,6 +201,20 @@ class _MergePdfScreenState extends State<MergePdfScreen> {
       return;
     }
 
+    // Request permissions before starting merge
+    if (PlatformHelper.isAndroid) {
+      final hasPermission =
+          await PlatformFileHandler.requestStoragePermission();
+      if (!hasPermission) {
+        if (mounted) {
+          _showErrorMessage(
+            'Storage permission is required to merge PDFs. Please grant permission and try again.',
+          );
+        }
+        return;
+      }
+    }
+
     setState(() {
       _isProcessing = true;
       _errorMessage = null;
@@ -223,10 +238,25 @@ class _MergePdfScreenState extends State<MergePdfScreen> {
 
       setState(() {
         _isProcessing = false;
-        _errorMessage = 'Failed to merge PDFs: $e';
       });
 
-      _showErrorMessage('Failed to merge PDFs: $e');
+      String errorMessage = 'Failed to merge PDFs: $e';
+
+      // Provide more specific error messages
+      if (e.toString().contains('MissingPluginException')) {
+        errorMessage =
+            'PDF merge feature not available on this device. Please try a different method or update the app.';
+      } else if (e.toString().contains('Permission denied')) {
+        errorMessage =
+            'Permission denied: Unable to access PDF files. Please check storage permissions.';
+      } else if (e.toString().contains('File not found')) {
+        errorMessage =
+            'One or more PDF files could not be accessed. Please select the files again.';
+      }
+
+      setState(() => _errorMessage = errorMessage);
+
+      _showErrorMessage(errorMessage);
     }
   }
 
@@ -378,6 +408,7 @@ class _MergePdfScreenState extends State<MergePdfScreen> {
         elevation: 0,
         backgroundColor: AppConfig.primaryColor,
         centerTitle: true,
+        actions: [ThemeSwitcher(compact: true), const SizedBox(width: 8)],
       ),
       body: Container(
         color: isDark ? const Color(0xFF0F0F0F) : const Color(0xFFFAFAFA),

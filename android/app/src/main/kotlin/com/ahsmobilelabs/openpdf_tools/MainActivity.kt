@@ -8,11 +8,17 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val PDF_OPENER_CHANNEL = "com.openpdf.tools/pdfOpener"
+    private val PDF_MANIPULATION_CHANNEL = "com.openpdf.tools/pdfManipulation"
     private var pdfFilePath: String? = null
+    private lateinit var pdfManipulationHandler: PdfManipulationHandler
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
+        // Initialize PDF manipulation handler
+        pdfManipulationHandler = PdfManipulationHandler(this)
+
+        // Set up PDF Opener channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PDF_OPENER_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -25,6 +31,12 @@ class MainActivity : FlutterActivity() {
                     }
                     else -> result.notImplemented()
                 }
+            }
+
+        // Set up PDF Manipulation channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PDF_MANIPULATION_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                pdfManipulationHandler.handleMethodCall(call, result)
             }
 
         // Handle intent that started this activity

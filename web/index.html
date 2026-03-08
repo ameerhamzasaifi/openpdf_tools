@@ -31,6 +31,13 @@
 
   <title>openpdf_tools</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- PDF.js for custom PDF viewer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // Set the worker source for PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

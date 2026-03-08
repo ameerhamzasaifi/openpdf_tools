@@ -54,11 +54,29 @@ android {
             excludes += "META-INF/proguard/androidx-*.pro"
             excludes += "META-INF/LICENSE"
             excludes += "META-INF/LICENSE.txt"
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE-notice.md"
             excludes += "META-INF/NOTICE"
+            excludes += "META-INF/NOTICE.md"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/MANIFEST.MF"
+            merges += "META-INF/LICENSE.md"
+            merges += "META-INF/LICENSE-notice.md"
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Apache PdfBox for PDF manipulation (merge, split, etc.)
+    implementation("org.apache.pdfbox:pdfbox:3.0.1")
+    implementation("org.apache.pdfbox:fontbox:3.0.1")
+    implementation("org.apache.commons:commons-io:1.3.2")
+    
+    // Android support libraries
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.core:core:1.13.1")
 }

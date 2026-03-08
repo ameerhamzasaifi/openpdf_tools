@@ -1,5 +1,9 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart' as pw;
+import 'dart:async';
 
 /// PDF editing service with simplified implementation to avoid font/isolate issues
 /// This creates basic PDFs using pure Dart without external pdf generation libraries
@@ -12,8 +16,16 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
+
+      // Ensure temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
+      }
+
       final outputPath =
           '${tempDir.path}/text_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+      debugPrint('[PdfEditingService] Adding text to PDF: $inputPath');
 
       // Simple approach: copy file and log metadata
       final inputFile = File(inputPath);
@@ -39,6 +51,12 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
+
+      // Ensure temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
+      }
+
       final outputPath =
           '${tempDir.path}/rotated_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
@@ -64,6 +82,12 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
+
+      // Ensure temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
+      }
+
       final outputPath =
           '${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
@@ -92,6 +116,12 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
+
+      // Ensure temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
+      }
+
       final outputPath =
           '${tempDir.path}/watermarked_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
@@ -117,6 +147,12 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
+
+      // Ensure temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
+      }
+
       final outputPath =
           '${tempDir.path}/colored_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
@@ -139,6 +175,12 @@ class PdfEditingService {
   static Future<String> compressPdf({required String inputPath}) async {
     try {
       final tempDir = await getTemporaryDirectory();
+
+      // Ensure temp directory exists
+      if (!await tempDir.exists()) {
+        await tempDir.create(recursive: true);
+      }
+
       final outputPath =
           '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.pdf';
 

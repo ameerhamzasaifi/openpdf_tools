@@ -93,3 +93,23 @@
 -dontwarn javax.annotation.**
 -dontwarn org.checkerframework.**
 -dontwarn com.google.android.play.core.**
+
+# PDFBox desktop/AWT library warnings (not available on Android)
+-dontwarn java.awt.**
+-dontwarn javax.imageio.**
+-dontwarn javax.servlet.**
+-dontwarn org.apache.log.**
+-dontwarn org.apache.log4j.**
+-dontwarn org.apache.avalon.**
+-dontwarn org.apache.commons.logging.impl.Log4JLogger
+-dontwarn org.apache.commons.logging.impl.ServletContextCleaner
+-dontwarn org.bouncycastle.asn1.**
+-dontwarn org.bouncycastle.cms.**
+-dontwarn org.bouncycastle.cert.**
+-dontwarn org.bouncycastle.jce.**
+-dontwarn org.bouncycastle.util.**
+
+# Keep PDFBox classes despite missing internaldependencies
+-keep class org.apache.pdfbox.** { *; }
+-keep class org.apache.fontbox.** { *; }
+-keep class org.apache.commons.logging.** { *; }

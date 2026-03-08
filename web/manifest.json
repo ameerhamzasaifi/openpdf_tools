@@ -1,11 +1,11 @@
 {
-    "name": "openpdf_tools",
-    "short_name": "openpdf_tools",
+    "name": "OpenPDF Tools",
+    "short_name": "OpenPDF Tools",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "A collection of tools for working with PDF files, including merging, splitting, compressing, and converting PDFs.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

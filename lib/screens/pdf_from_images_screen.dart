@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:openpdf_tools/widgets/in_app_file_picker.dart';
+import 'package:openpdf_tools/widgets/theme_switcher.dart';
 
 class PdfFromImagesScreen extends StatefulWidget {
   const PdfFromImagesScreen({super.key});
@@ -152,6 +153,8 @@ class _PdfFromImagesScreenState extends State<PdfFromImagesScreen> {
         backgroundColor: isDark ? const Color(0xFF1C1C1C) : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black87,
         actions: [
+          ThemeSwitcher(compact: true),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.add_photo_alternate),
             onPressed: pickImages,

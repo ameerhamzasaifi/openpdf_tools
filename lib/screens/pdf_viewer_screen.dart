@@ -13,6 +13,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'history_screen.dart';
 
 class PdfViewerScreen extends StatefulWidget {
@@ -726,6 +727,8 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         ),
         elevation: 0,
         actions: [
+          ThemeSwitcher(compact: true),
+          const SizedBox(width: 4),
           IconButton(
             icon: Icon(
               _isFavorite ? Icons.star : Icons.star_outline,
@@ -881,7 +884,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                   // Enhanced Bottom Control Bar
                   if (_showControls)
                     Positioned(
-                      bottom: 0,
+                      bottom: MediaQuery.of(context).padding.bottom,
                       left: 0,
                       right: 0,
                       child: Column(

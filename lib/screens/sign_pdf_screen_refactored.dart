@@ -4,6 +4,7 @@ import '../models/signing_models.dart';
 import '../services/certificate_service.dart';
 import '../services/secure_file_picker_service.dart';
 import '../services/production_pdf_signing_service.dart';
+import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'pdf_viewer_screen.dart';
 
 /// Production-grade Sign PDF screen with enterprise-ready UI/UX
@@ -72,6 +73,7 @@ class _SignPdfScreenRefactoredState extends State<SignPdfScreenRefactored> {
         elevation: 0,
         backgroundColor: isDark ? const Color(0xFF1C1C1C) : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black,
+        actions: [ThemeSwitcher(compact: true), const SizedBox(width: 8)],
       ),
       body: _isProcessing
           ? _buildProcessingState()
@@ -287,7 +289,7 @@ class _SignPdfScreenRefactoredState extends State<SignPdfScreenRefactored> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     border: Border.all(color: Colors.orange),
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -358,7 +360,7 @@ class _SignPdfScreenRefactoredState extends State<SignPdfScreenRefactored> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     border: Border.all(color: Colors.green),
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -566,7 +568,7 @@ class _SignPdfScreenRefactoredState extends State<SignPdfScreenRefactored> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 border: Border.all(color: Colors.orange),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -680,7 +682,7 @@ class _SignPdfScreenRefactoredState extends State<SignPdfScreenRefactored> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: Colors.red.withValues(alpha: 0.1),
         border: Border.all(color: Colors.red),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -708,7 +710,7 @@ class _SignPdfScreenRefactoredState extends State<SignPdfScreenRefactored> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
+        color: Colors.green.withValues(alpha: 0.1),
         border: Border.all(color: Colors.green),
         borderRadius: BorderRadius.circular(8),
       ),
