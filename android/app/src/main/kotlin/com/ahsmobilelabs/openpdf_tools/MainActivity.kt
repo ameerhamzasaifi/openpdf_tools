@@ -9,37 +9,29 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val PDF_OPENER_CHANNEL = "com.openpdf.tools/pdfOpener"
     private val PDF_MANIPULATION_CHANNEL = "com.openpdf.tools/pdfManipulation"
-    private var pdfFilePath: String? = null
     private lateinit var pdfManipulationHandler: PdfManipulationHandler
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // Initialize PDF manipulation handler
         pdfManipulationHandler = PdfManipulationHandler(this)
 
-        // Set up PDF Opener channel
+        // PDF Opener channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PDF_OPENER_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "registerPdfOpener" -> {
-                        result.success(true)
-                    }
-                    "getReceivedPdfPath" -> {
-                        val path = extractPdfPathFromIntent()
-                        result.success(path)
-                    }
+                    "registerPdfOpener" -> result.success(true)
+                    "getReceivedPdfPath" -> result.success(extractPdfPathFromIntent())
                     else -> result.notImplemented()
                 }
             }
 
-        // Set up PDF Manipulation channel
+        // PDF Manipulation channel — delegate everything to the handler
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PDF_MANIPULATION_CHANNEL)
             .setMethodCallHandler { call, result ->
                 pdfManipulationHandler.handleMethodCall(call, result)
             }
 
-        // Handle intent that started this activity
         handleIntent(intent)
     }
 
@@ -51,32 +43,27 @@ class MainActivity : FlutterActivity() {
 
     private fun handleIntent(intent: Intent) {
         if (intent.action == Intent.ACTION_VIEW) {
-            val uri = intent.data
-            if (uri != null && isPdfFile(uri)) {
-                pdfFilePath = getFilePathFromUri(uri)
-                // Send to Flutter
-                sendPdfPathToFlutter(pdfFilePath)
+            val uri = intent.data ?: return
+            if (isPdfFile(uri)) {
+                val path = getFilePathFromUri(uri) ?: return
+                flutterEngine?.let {
+                    MethodChannel(it.dartExecutor.binaryMessenger, PDF_OPENER_CHANNEL)
+                        .invokeMethod("openPdf", path)
+                }
             }
         }
     }
 
     private fun extractPdfPathFromIntent(): String? {
-        val uri = intent?.data
-        return if (uri != null && isPdfFile(uri)) {
-            getFilePathFromUri(uri)
-        } else {
-            null
-        }
+        val uri = intent?.data ?: return null
+        return if (isPdfFile(uri)) getFilePathFromUri(uri) else null
     }
 
     private fun getFilePathFromUri(uri: Uri): String? {
-        return when {
-            uri.scheme == "file" -> uri.path
-            uri.scheme == "content" -> getPathFromContentUri(uri)
-            uri.scheme == "openpdf" -> {
-                // Handle custom deep link: openpdf://file/path/to/file.pdf
-                uri.pathSegments.drop(1).joinToString("/")
-            }
+        return when (uri.scheme) {
+            "file" -> uri.path
+            "content" -> getPathFromContentUri(uri)
+            "openpdf" -> uri.pathSegments.drop(1).joinToString("/")
             else -> uri.toString()
         }
     }
@@ -84,17 +71,12 @@ class MainActivity : FlutterActivity() {
     private fun getPathFromContentUri(uri: Uri): String? {
         return try {
             val projection = arrayOf(android.provider.MediaStore.MediaColumns.DATA)
-            val cursor = contentResolver.query(uri, projection, null, null, null)
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val columnIndex = it.getColumnIndexOrThrow(android.provider.MediaStore.MediaColumns.DATA)
-                    cursor.getString(columnIndex)
-                } else {
-                    uri.path
-                }
+            contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(cursor.getColumnIndexOrThrow(android.provider.MediaStore.MediaColumns.DATA))
+                } else uri.path
             }
         } catch (e: Exception) {
-            // Fallback to path
             uri.path
         }
     }
@@ -103,12 +85,5 @@ class MainActivity : FlutterActivity() {
         val mimeType = contentResolver.getType(uri)
         val path = uri.path ?: uri.toString()
         return mimeType == "application/pdf" || path.endsWith(".pdf", ignoreCase = true)
-    }
-
-    private fun sendPdfPathToFlutter(path: String?) {
-        if (path != null) {
-            MethodChannel(flutterEngine!!.dartExecutor.binaryMessenger, PDF_OPENER_CHANNEL)
-                .invokeMethod("openPdf", path)
-        }
     }
 }

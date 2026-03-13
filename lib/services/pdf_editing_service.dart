@@ -1,8 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart' as pw;
 import 'dart:async';
 
 /// PDF editing service with simplified implementation to avoid font/isolate issues

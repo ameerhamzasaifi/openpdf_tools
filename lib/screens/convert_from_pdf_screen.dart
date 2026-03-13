@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:openpdf_tools/utils/platform_file_handler.dart';
 import 'package:openpdf_tools/utils/platform_helper.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as pathLib;
+import 'package:path/path.dart' as path_lib;
 import 'package:openpdf_tools/widgets/in_app_file_picker.dart';
 import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'pdf_viewer_screen.dart';
@@ -24,8 +24,7 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
   String? _selectedPdfPath;
   String? _selectedFormat;
 
-  static const platform =
-      MethodChannel('com.openpdf.tools/pdfManipulation');
+  static const platform = MethodChannel('com.openpdf.tools/pdfManipulation');
   // All conversion formats
   static const List<ConversionFormat> conversionFormats = [
     ConversionFormat(
@@ -332,7 +331,7 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
       }
 
       final fileName =
-          '${pathLib.basename(_selectedPdfPath!).replaceAll('.pdf', '')}_converted.${format.fileExtension}';
+          '${path_lib.basename(_selectedPdfPath!).replaceAll('.pdf', '')}_converted.${format.fileExtension}';
       final outputPath = '${outputDir.path}/$fileName';
 
       // Call conversion based on format
@@ -492,12 +491,13 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
       if (Platform.isAndroid) {
         // Android: Use method channel to render PDF pages as images
         try {
-          final result = await platform.invokeMethod<List<dynamic>>('pdfToImages', {
-            'inputPath': _selectedPdfPath!,
-            'outputDir': imageDir,
-            'format': imageFormat,
-            'quality': 150,
-          });
+          final result = await platform
+              .invokeMethod<List<dynamic>>('pdfToImages', {
+                'inputPath': _selectedPdfPath!,
+                'outputDir': imageDir,
+                'format': imageFormat,
+                'quality': 150,
+              });
           if (result == null || result.isEmpty) {
             throw Exception('Failed to convert PDF to images');
           }
@@ -571,9 +571,9 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
       await Directory(outDir).create(recursive: true);
     }
 
-    final outFileName = pathLib.basename(
-      _selectedPdfPath!,
-    ).replaceAll(RegExp(r'\.[^.]*$'), '');
+    final outFileName = path_lib
+        .basename(_selectedPdfPath!)
+        .replaceAll(RegExp(r'\.[^.]*$'), '');
 
     final formatMap = {
       'Word': 'docx',
@@ -764,7 +764,7 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
                           ),
                         ),
                         Text(
-                          pathLib.basename(_selectedPdfPath!),
+                          path_lib.basename(_selectedPdfPath!),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 12),

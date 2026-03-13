@@ -189,73 +189,77 @@ class ModernBottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? const Color(0xFF404040) : Colors.grey.shade200,
+    return SafeArea(
+      bottom: true,
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? const Color(0xFF404040) : Colors.grey.shade200,
+            ),
           ),
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(items.length > 5 ? 5 : items.length, (index) {
-          final isSelected = selectedIndex == index;
-          final item = items[index];
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(items.length > 5 ? 5 : items.length, (index) {
+            final isSelected = selectedIndex == index;
+            final item = items[index];
 
-          return Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => onIndexChanged(index),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isSelected
-                              ? const Color(0xFFC6302C).withValues(alpha: 0.1)
-                              : Colors.transparent,
+            return Expanded(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onIndexChanged(index),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? const Color(0xFFC6302C).withValues(alpha: 0.1)
+                                : Colors.transparent,
+                          ),
+                          child: Icon(
+                            item.icon,
+                            size: 24,
+                            color: isSelected
+                                ? const Color(0xFFC6302C)
+                                : (isDark
+                                      ? Colors.grey.shade500
+                                      : Colors.grey.shade600),
+                          ),
                         ),
-                        child: Icon(
-                          item.icon,
-                          size: 24,
-                          color: isSelected
-                              ? const Color(0xFFC6302C)
-                              : (isDark
-                                    ? Colors.grey.shade500
-                                    : Colors.grey.shade600),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? const Color(0xFFC6302C)
+                                : (isDark
+                                      ? Colors.grey.shade500
+                                      : Colors.grey.shade600),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? const Color(0xFFC6302C)
-                              : (isDark
-                                    ? Colors.grey.shade500
-                                    : Colors.grey.shade600),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }

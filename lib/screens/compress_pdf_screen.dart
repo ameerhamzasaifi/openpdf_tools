@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
@@ -203,16 +204,28 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
   /// Android compression using native method channel
   Future<void> _compressPdfAndroid(String outputPath) async {
     try {
-      final result = await platform.invokeMethod<String>('compressPdf', {
-        'inputPath': _pdfPath!,
-        'outputPath': outputPath,
-      });
+      final result = await platform
+          .invokeMethod<String>('compressPdf', {
+            'inputPath': _pdfPath!,
+            'outputPath': outputPath,
+          })
+          .timeout(
+            const Duration(seconds: 120),
+            onTimeout: () => throw TimeoutException(
+              'Android compression timed out after 120 seconds',
+            ),
+          );
 
       if (result == null || result.isEmpty) {
         throw Exception('Android compression returned null or empty path');
       }
 
       debugPrint('[CompressPdf] Android compression successful: $result');
+    } on TimeoutException catch (e) {
+      debugPrint('[CompressPdf] Android compression timeout: $e');
+      throw Exception(
+        'PDF compression is taking too long. Please try a smaller file or lower quality.',
+      );
     } on PlatformException catch (e) {
       debugPrint('[CompressPdf] Android compression failed: ${e.message}');
       throw Exception('Android compression failed: ${e.message}');
