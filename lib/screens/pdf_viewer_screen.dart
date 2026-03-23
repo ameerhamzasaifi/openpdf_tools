@@ -13,6 +13,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart' as share_plus;
 import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'history_screen.dart';
 
@@ -326,7 +327,13 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     }
 
     try {
-      await Process.run('xdg-open', [_pdfFile!.parent.path]);
+      if (Platform.isAndroid || Platform.isIOS) {
+        await share_plus.SharePlus.instance.share(
+          share_plus.ShareParams(files: [share_plus.XFile(_pdfFile!.path)]),
+        );
+      } else {
+        await Process.run('xdg-open', [_pdfFile!.parent.path]);
+      }
     } catch (e) {
       if (!mounted) return;
       // ignore: use_build_context_synchronously

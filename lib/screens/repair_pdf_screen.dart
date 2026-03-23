@@ -240,9 +240,12 @@ class _RepairPdfScreenState extends State<RepairPdfScreen> {
         );
       } else {
         // Use native sharing on other platforms
-        await share_plus.Share.shareXFiles([
-          XFile(filePath),
-        ], text: '$fileType: $fileName');
+        await share_plus.SharePlus.instance.share(
+          share_plus.ShareParams(
+            files: [XFile(filePath)],
+            text: '$fileType: $fileName',
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

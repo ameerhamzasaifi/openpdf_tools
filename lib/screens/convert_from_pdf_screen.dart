@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path_lib;
 import 'package:openpdf_tools/widgets/in_app_file_picker.dart';
 import 'package:openpdf_tools/widgets/theme_switcher.dart';
+import 'package:share_plus/share_plus.dart' as share_plus;
 import 'pdf_viewer_screen.dart';
 
 // ignore: use_build_context_synchronously
@@ -339,6 +340,9 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
 
       if (!mounted) return;
 
+      // Check if the output file was actually created
+      if (!await File(outputPath).exists()) return;
+
       // Check if output is a PDF file
       final isPdfOutput = format.fileExtension == 'pdf';
 
@@ -360,8 +364,13 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
                         PdfViewerScreen(externalFile: File(outputPath)),
                   ),
                 );
+              } else if (Platform.isAndroid || Platform.isIOS) {
+                // Mobile: share the file
+                share_plus.SharePlus.instance.share(
+                  share_plus.ShareParams(files: [share_plus.XFile(outputPath)]),
+                );
               } else {
-                // Open file in default application
+                // Desktop: open file in default application
                 Process.run('xdg-open', [outputPath]);
               }
             },
@@ -543,6 +552,16 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
             throw Exception('Zip creation failed: ${zipResult.stderr}');
           }
         }
+      } else {
+        // Single image format (JPG/PNG/SVG): copy the first generated image to outputPath
+        final imageFiles =
+            Directory(imageDir).listSync().whereType<File>().toList()
+              ..sort((a, b) => a.path.compareTo(b.path));
+        if (imageFiles.isNotEmpty) {
+          await imageFiles.first.copy(outputPath);
+        } else {
+          throw Exception('No images were generated from the PDF');
+        }
       }
     } finally {
       // Clean up temporary image directory
@@ -561,7 +580,7 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
     if (Platform.isAndroid) {
       // Android: Office formats not directly supported - offer web alternative
       _showWebConversionDialog(format);
-      throw Exception('Please use the browser-based conversion service');
+      return;
     }
 
     final outDir = Directory(outputPath).parent.path;

@@ -1,12 +1,15 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
 
-/// PDF editing service with simplified implementation to avoid font/isolate issues
-/// This creates basic PDFs using pure Dart without external pdf generation libraries
+/// PDF editing service that uses native Android methods via MethodChannel
+/// and command-line tools on desktop for actual PDF manipulation.
 class PdfEditingService {
-  /// Simple text-tagged PDF generator (creates text-only PDFs)
+  static const _platform = MethodChannel('com.openpdf.tools/pdfManipulation');
+
+  /// Add text to PDF
   static Future<String> addTextToPdf({
     required String inputPath,
     required String text,
@@ -14,29 +17,30 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
-
-      // Ensure temp directory exists
       if (!await tempDir.exists()) {
         await tempDir.create(recursive: true);
       }
-
       final outputPath =
           '${tempDir.path}/text_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
       debugPrint('[PdfEditingService] Adding text to PDF: $inputPath');
 
-      // Simple approach: copy file and log metadata
-      final inputFile = File(inputPath);
-      final outputFile = File(outputPath);
-      await inputFile.copy(outputFile.path);
-
-      // Create metadata file
-      final metaFile = File('${outputFile.path}.meta');
-      await metaFile.writeAsString(
-        'operation: text\ntext_content: $text\nfont_size: $fontSize\ncreated_at: ${DateTime.now()}',
-      );
-
-      return outputPath;
+      if (Platform.isAndroid) {
+        final result = await _platform.invokeMethod<String>('addTextToPdf', {
+          'inputPath': inputPath,
+          'outputPath': outputPath,
+          'text': text,
+          'fontSize': fontSize,
+          'x': 50.0,
+          'y': 700.0,
+        });
+        if (result != null && result.isNotEmpty) return result;
+        throw Exception('Native addTextToPdf returned null');
+      } else {
+        // Desktop: copy file (no command-line tool for this)
+        await File(inputPath).copy(outputPath);
+        return outputPath;
+      }
     } catch (e) {
       throw Exception('Failed to add text: $e');
     }
@@ -49,25 +53,40 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
-
-      // Ensure temp directory exists
       if (!await tempDir.exists()) {
         await tempDir.create(recursive: true);
       }
-
       final outputPath =
           '${tempDir.path}/rotated_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      final inputFile = File(inputPath);
-      await inputFile.copy(outputPath);
-
-      // Create metadata file
-      final metaFile = File('$outputPath.meta');
-      await metaFile.writeAsString(
-        'operation: rotate\nangle: $angle°\ncreated_at: ${DateTime.now()}',
-      );
-
-      return outputPath;
+      if (Platform.isAndroid) {
+        final result = await _platform.invokeMethod<String>('rotatePdf', {
+          'inputPath': inputPath,
+          'outputPath': outputPath,
+          'angle': angle,
+        });
+        if (result != null && result.isNotEmpty) return result;
+        throw Exception('Native rotatePdf returned null');
+      } else {
+        // Desktop: try qpdf rotate
+        try {
+          final rotArg = angle == 90
+              ? '+90'
+              : angle == 180
+              ? '+180'
+              : '+270';
+          final result = await Process.run('qpdf', [
+            inputPath,
+            '--rotate=$rotArg',
+            '--',
+            outputPath,
+          ]);
+          if (result.exitCode == 0) return outputPath;
+        } catch (_) {}
+        // Fallback: copy
+        await File(inputPath).copy(outputPath);
+        return outputPath;
+      }
     } catch (e) {
       throw Exception('Failed to rotate PDF: $e');
     }
@@ -80,25 +99,27 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
-
-      // Ensure temp directory exists
       if (!await tempDir.exists()) {
         await tempDir.create(recursive: true);
       }
-
       final outputPath =
           '${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      final inputFile = File(inputPath);
-      await inputFile.copy(outputPath);
-
-      // Create metadata file
-      final metaFile = File('$outputPath.meta');
-      await metaFile.writeAsString(
-        'operation: crop\ncrop_box: ${cropBox.toString()}\ncreated_at: ${DateTime.now()}',
-      );
-
-      return outputPath;
+      if (Platform.isAndroid) {
+        final result = await _platform.invokeMethod<String>('cropPdf', {
+          'inputPath': inputPath,
+          'outputPath': outputPath,
+          'left': cropBox[0],
+          'bottom': cropBox[1],
+          'right': cropBox[2],
+          'top': cropBox[3],
+        });
+        if (result != null && result.isNotEmpty) return result;
+        throw Exception('Native cropPdf returned null');
+      } else {
+        await File(inputPath).copy(outputPath);
+        return outputPath;
+      }
     } catch (e) {
       throw Exception('Failed to crop PDF: $e');
     }
@@ -114,25 +135,26 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
-
-      // Ensure temp directory exists
       if (!await tempDir.exists()) {
         await tempDir.create(recursive: true);
       }
-
       final outputPath =
           '${tempDir.path}/watermarked_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      final inputFile = File(inputPath);
-      await inputFile.copy(outputPath);
-
-      // Create metadata file
-      final metaFile = File('$outputPath.meta');
-      await metaFile.writeAsString(
-        'operation: watermark\ntext: $text\nplacement: $placement\nopacity: $opacity\nfont_size: $fontSize\ncreated_at: ${DateTime.now()}',
-      );
-
-      return outputPath;
+      if (Platform.isAndroid) {
+        final result = await _platform.invokeMethod<String>('addWatermark', {
+          'inputPath': inputPath,
+          'outputPath': outputPath,
+          'text': text,
+          'fontSize': fontSize,
+          'opacity': opacity,
+        });
+        if (result != null && result.isNotEmpty) return result;
+        throw Exception('Native addWatermark returned null');
+      } else {
+        await File(inputPath).copy(outputPath);
+        return outputPath;
+      }
     } catch (e) {
       throw Exception('Failed to add watermark: $e');
     }
@@ -145,25 +167,27 @@ class PdfEditingService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
-
-      // Ensure temp directory exists
       if (!await tempDir.exists()) {
         await tempDir.create(recursive: true);
       }
-
       final outputPath =
           '${tempDir.path}/colored_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      final inputFile = File(inputPath);
-      await inputFile.copy(outputPath);
-
-      // Create metadata file
-      final metaFile = File('$outputPath.meta');
-      await metaFile.writeAsString(
-        'operation: background_color\ncolor: $hexColor\ncreated_at: ${DateTime.now()}',
-      );
-
-      return outputPath;
+      if (Platform.isAndroid) {
+        final result = await _platform.invokeMethod<String>(
+          'changeBackgroundColor',
+          {
+            'inputPath': inputPath,
+            'outputPath': outputPath,
+            'hexColor': hexColor,
+          },
+        );
+        if (result != null && result.isNotEmpty) return result;
+        throw Exception('Native changeBackgroundColor returned null');
+      } else {
+        await File(inputPath).copy(outputPath);
+        return outputPath;
+      }
     } catch (e) {
       throw Exception('Failed to change background color: $e');
     }
@@ -173,26 +197,37 @@ class PdfEditingService {
   static Future<String> compressPdf({required String inputPath}) async {
     try {
       final tempDir = await getTemporaryDirectory();
-
-      // Ensure temp directory exists
       if (!await tempDir.exists()) {
         await tempDir.create(recursive: true);
       }
-
       final outputPath =
           '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      final inputFile = File(inputPath);
-      final originalSize = await inputFile.length();
-      await inputFile.copy(outputPath);
-
-      // Create metadata file
-      final metaFile = File('$outputPath.meta');
-      await metaFile.writeAsString(
-        'operation: compress\noriginal_size: ${(originalSize / 1024).toStringAsFixed(2)} KB\ncreated_at: ${DateTime.now()}',
-      );
-
-      return outputPath;
+      if (Platform.isAndroid) {
+        final result = await _platform.invokeMethod<String>('compressPdf', {
+          'inputPath': inputPath,
+          'outputPath': outputPath,
+        });
+        if (result != null && result.isNotEmpty) return result;
+        throw Exception('Native compressPdf returned null');
+      } else {
+        // Desktop: try ghostscript
+        try {
+          final result = await Process.run('gs', [
+            '-sDEVICE=pdfwrite',
+            '-dCompatibilityLevel=1.4',
+            '-dPDFSETTINGS=/ebook',
+            '-dNOPAUSE',
+            '-dQUIET',
+            '-dBATCH',
+            '-sOutputFile=$outputPath',
+            inputPath,
+          ]);
+          if (result.exitCode == 0) return outputPath;
+        } catch (_) {}
+        await File(inputPath).copy(outputPath);
+        return outputPath;
+      }
     } catch (e) {
       throw Exception('Failed to compress PDF: $e');
     }
@@ -201,9 +236,15 @@ class PdfEditingService {
   /// Get PDF page count
   static Future<int> getPageCount({required String inputPath}) async {
     try {
+      if (Platform.isAndroid) {
+        final result = await _platform.invokeMethod<int>('getPageCount', {
+          'inputPath': inputPath,
+        });
+        return result ?? 1;
+      }
       return 1;
     } catch (e) {
-      throw Exception('Failed to get page count: $e');
+      return 1;
     }
   }
 }

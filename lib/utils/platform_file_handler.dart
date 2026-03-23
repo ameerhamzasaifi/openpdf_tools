@@ -14,14 +14,15 @@ class PlatformFileHandler {
 
     try {
       if (PlatformHelper.isAndroid) {
-        // Use standard storage permission which shows popup dialog
-        // On Android 6-12: requests READ/WRITE_EXTERNAL_STORAGE
-        // On Android 13+: requests READ_MEDIA_IMAGES/READ_MEDIA_VIDEO
-        final status = await Permission.storage.request();
-        return status.isGranted;
+        final photoStatus = await Permission.photos.status;
+        final storageStatus = await Permission.storage.status;
+        if (photoStatus.isGranted || storageStatus.isGranted) return true;
+
+        final storageResult = await Permission.storage.request();
+        final photoResult = await Permission.photos.request();
+        return storageResult.isGranted || photoResult.isGranted;
       }
     } catch (e) {
-      // Permission request error - return false to handle gracefully
       return false;
     }
     return true;
@@ -32,17 +33,14 @@ class PlatformFileHandler {
     if (!PlatformHelper.isAndroid) return true;
 
     try {
-      // For Android 13+, request specific media permissions
-      final photoStatus = await Permission.photos.request();
-      final videoStatus = await Permission.videos.request();
-
-      return photoStatus.isGranted || videoStatus.isGranted;
+      final photoResult = await Permission.photos.request();
+      final videoResult = await Permission.videos.request();
+      return photoResult.isGranted || videoResult.isGranted;
     } catch (e) {
       return false;
     }
   }
 
-  /// Request camera permission for image capture
   static Future<bool> requestCameraPermission() async {
     if (!PlatformHelper.isMobile) return true;
 
@@ -54,7 +52,6 @@ class PlatformFileHandler {
     }
   }
 
-  /// Request media library access (iOS)
   static Future<bool> requestMediaLibraryAccess() async {
     if (!PlatformHelper.isIOS) return true;
 
@@ -78,7 +75,6 @@ class PlatformFileHandler {
     }
   }
 
-  /// Request MANAGE_EXTERNAL_STORAGE permission for Android 11+
   static Future<bool> requestManageExternalStoragePermission() async {
     if (!PlatformHelper.isAndroid) return true;
 
@@ -105,7 +101,6 @@ class PlatformFileHandler {
 
     try {
       if (PlatformHelper.isAndroid) {
-        // Request storage permissions
         final storageGranted = await requestStoragePermission();
 
         // Request media permissions for Android 13+

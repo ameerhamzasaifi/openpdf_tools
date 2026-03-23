@@ -1,16 +1,21 @@
 package com.ahsmobilelabs.openpdf_tools
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.PDPageContentStream
+import org.apache.pdfbox.pdmodel.common.PDRectangle
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission
 import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy
 import org.apache.pdfbox.pdmodel.font.PDType1Font
@@ -24,6 +29,8 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class PdfManipulationHandler(private val context: Context) {
+
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     fun handleMethodCall(call: MethodCall, result: MethodChannel.Result) {
         try {
@@ -41,6 +48,8 @@ class PdfManipulationHandler(private val context: Context) {
                 "rotatePdf" -> rotatePdf(call, result)
                 "addTextToPdf" -> addTextToPdf(call, result)
                 "addWatermark" -> addWatermark(call, result)
+                "cropPdf" -> cropPdf(call, result)
+                "changeBackgroundColor" -> changeBackgroundColor(call, result)
                 else -> result.notImplemented()
             }
         } catch (e: Exception) {
@@ -71,9 +80,9 @@ class PdfManipulationHandler(private val context: Context) {
                 merged.save(outputPath)
                 merged.close()
                 for (doc in sourceDocs) { try { doc.close() } catch (_: Exception) {} }
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("MERGE_FAILED", e.message, null)
+                mainHandler.post { result.error("MERGE_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -103,9 +112,9 @@ class PdfManipulationHandler(private val context: Context) {
                     outputPaths.add(outPath)
                 }
                 doc.close()
-                result.success(outputPaths)
+                mainHandler.post { result.success(outputPaths) }
             } catch (e: Exception) {
-                result.error("SPLIT_FAILED", e.message, null)
+                mainHandler.post { result.error("SPLIT_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -131,9 +140,9 @@ class PdfManipulationHandler(private val context: Context) {
                 rangeDoc.save(outputPath)
                 rangeDoc.close()
                 doc.close()
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("SPLIT_RANGE_FAILED", e.message, null)
+                mainHandler.post { result.error("SPLIT_RANGE_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -152,9 +161,9 @@ class PdfManipulationHandler(private val context: Context) {
                 ensureParentDir(outputPath)
                 doc.save(outputPath)
                 doc.close()
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("COMPRESS_FAILED", e.message, null)
+                mainHandler.post { result.error("COMPRESS_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -174,9 +183,9 @@ class PdfManipulationHandler(private val context: Context) {
                 doc.close()
                 ensureParentDir(outputPath)
                 File(outputPath).writeText(text)
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("EXTRACT_TEXT_FAILED", e.message, null)
+                mainHandler.post { result.error("EXTRACT_TEXT_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -211,7 +220,6 @@ class PdfManipulationHandler(private val context: Context) {
                     val height = (page.height * scale).toInt()
                     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
 
-                    // White background
                     val canvas = Canvas(bitmap)
                     canvas.drawColor(Color.WHITE)
 
@@ -227,9 +235,9 @@ class PdfManipulationHandler(private val context: Context) {
                 }
                 renderer.close()
                 pfd.close()
-                result.success(outputPaths)
+                mainHandler.post { result.success(outputPaths) }
             } catch (e: Exception) {
-                result.error("PDF_TO_IMAGES_FAILED", e.message, null)
+                mainHandler.post { result.error("PDF_TO_IMAGES_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -253,9 +261,9 @@ class PdfManipulationHandler(private val context: Context) {
                         zos.closeEntry()
                     }
                 }
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("ZIP_FAILED", e.message, null)
+                mainHandler.post { result.error("ZIP_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -279,9 +287,9 @@ class PdfManipulationHandler(private val context: Context) {
                 ensureParentDir(outputPath)
                 doc.save(outputPath)
                 doc.close()
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("ENCRYPT_FAILED", e.message, null)
+                mainHandler.post { result.error("ENCRYPT_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -300,9 +308,9 @@ class PdfManipulationHandler(private val context: Context) {
                 ensureParentDir(outputPath)
                 doc.save(outputPath)
                 doc.close()
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("PDFA_FAILED", e.message, null)
+                mainHandler.post { result.error("PDFA_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -318,9 +326,9 @@ class PdfManipulationHandler(private val context: Context) {
                 val doc = Loader.loadPDF(File(inputPath))
                 val count = doc.numberOfPages
                 doc.close()
-                result.success(count)
+                mainHandler.post { result.success(count) }
             } catch (e: Exception) {
-                result.error("PAGE_COUNT_FAILED", e.message, null)
+                mainHandler.post { result.error("PAGE_COUNT_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -343,9 +351,9 @@ class PdfManipulationHandler(private val context: Context) {
                 ensureParentDir(outputPath)
                 doc.save(outputPath)
                 doc.close()
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("ROTATE_FAILED", e.message, null)
+                mainHandler.post { result.error("ROTATE_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -381,9 +389,9 @@ class PdfManipulationHandler(private val context: Context) {
                 ensureParentDir(outputPath)
                 doc.save(outputPath)
                 doc.close()
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("ADD_TEXT_FAILED", e.message, null)
+                mainHandler.post { result.error("ADD_TEXT_FAILED", e.message, null) }
             }
         }.start()
     }
@@ -430,9 +438,78 @@ class PdfManipulationHandler(private val context: Context) {
                 ensureParentDir(outputPath)
                 doc.save(outputPath)
                 doc.close()
-                result.success(outputPath)
+                mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                result.error("WATERMARK_FAILED", e.message, null)
+                mainHandler.post { result.error("WATERMARK_FAILED", e.message, null) }
+            }
+        }.start()
+    }
+
+    // ─── CROP PDF ─────────────────────────────────────────────────────────────
+
+    private fun cropPdf(call: MethodCall, result: MethodChannel.Result) {
+        val inputPath = call.argument<String>("inputPath")
+            ?: return result.error("INVALID_ARGS", "inputPath is required", null)
+        val outputPath = call.argument<String>("outputPath")
+            ?: return result.error("INVALID_ARGS", "outputPath is required", null)
+        val left = call.argument<Double>("left")?.toFloat() ?: 0f
+        val bottom = call.argument<Double>("bottom")?.toFloat() ?: 0f
+        val right = call.argument<Double>("right")?.toFloat() ?: 612f
+        val top = call.argument<Double>("top")?.toFloat() ?: 792f
+
+        Thread {
+            try {
+                val doc = Loader.loadPDF(File(inputPath))
+                val cropBox = PDRectangle(left, bottom, right - left, top - bottom)
+                for (page in doc.pages.toList()) {
+                    page.cropBox = cropBox
+                }
+                ensureParentDir(outputPath)
+                doc.save(outputPath)
+                doc.close()
+                mainHandler.post { result.success(outputPath) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("CROP_FAILED", e.message, null) }
+            }
+        }.start()
+    }
+
+    // ─── CHANGE BACKGROUND COLOR ──────────────────────────────────────────────
+
+    private fun changeBackgroundColor(call: MethodCall, result: MethodChannel.Result) {
+        val inputPath = call.argument<String>("inputPath")
+            ?: return result.error("INVALID_ARGS", "inputPath is required", null)
+        val outputPath = call.argument<String>("outputPath")
+            ?: return result.error("INVALID_ARGS", "outputPath is required", null)
+        val hexColor = call.argument<String>("hexColor") ?: "#FFFFFF"
+
+        Thread {
+            try {
+                val doc = Loader.loadPDF(File(inputPath))
+                val color = Color.parseColor(hexColor)
+                val r = Color.red(color) / 255f
+                val g = Color.green(color) / 255f
+                val b = Color.blue(color) / 255f
+
+                for (page in doc.pages.toList()) {
+                    val mediaBox = page.mediaBox
+                    PDPageContentStream(
+                        doc, page, PDPageContentStream.AppendMode.PREPEND, true
+                    ).use { cs ->
+                        cs.setNonStrokingColor(r, g, b)
+                        cs.addRect(
+                            mediaBox.lowerLeftX, mediaBox.lowerLeftY,
+                            mediaBox.width, mediaBox.height
+                        )
+                        cs.fill()
+                    }
+                }
+                ensureParentDir(outputPath)
+                doc.save(outputPath)
+                doc.close()
+                mainHandler.post { result.success(outputPath) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("BG_COLOR_FAILED", e.message, null) }
             }
         }.start()
     }
