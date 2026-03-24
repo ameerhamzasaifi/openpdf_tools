@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         applicationId = "com.ahsmobilelabs.openpdf_tools"
-        minSdk = flutter.minSdkVersion
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
