@@ -707,81 +707,90 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       backgroundColor: _isNightMode
           ? const Color(0xFF0A0A0A)
           : (isDark ? const Color(0xFF0F0F0F) : const Color(0xFFFAFAFA)),
-      appBar: AppBar(
-        backgroundColor: _isNightMode
-            ? const Color(0xFF121212)
-            : (isDark ? const Color(0xFF1C1C1C) : Colors.white),
-        foregroundColor: isDark ? Colors.white : Colors.black87,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              fileName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (_pdfFile != null)
-              Text(
-                '$fileSize MB${_pdfViewerController.pageCount > 0 ? ' • ${_pdfViewerController.pageCount} pages' : ''}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  color: isDark ? Colors.white70 : Colors.black54,
+      appBar: kIsWeb
+          ? null
+          : AppBar(
+              backgroundColor: _isNightMode
+                  ? const Color(0xFF121212)
+                  : (isDark ? const Color(0xFF1C1C1C) : Colors.white),
+              foregroundColor: isDark ? Colors.white : Colors.black87,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fileName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (_pdfFile != null)
+                    Text(
+                      '$fileSize MB${_pdfViewerController.pageCount > 0 ? ' • ${_pdfViewerController.pageCount} pages' : ''}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                ],
+              ),
+              elevation: 0,
+              actions: [
+                ThemeSwitcher(compact: true),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(
+                    _isFavorite ? Icons.star : Icons.star_outline,
+                    color: _isFavorite ? Colors.amber : null,
+                  ),
+                  tooltip: _isFavorite
+                      ? 'Remove from Favorites'
+                      : 'Add to Favorites',
+                  onPressed: (_pdfFile == null && _pdfBytes == null)
+                      ? null
+                      : () async {
+                          // Favorites only work on desktop/mobile platforms
+                          if (kIsWeb) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Favorites not available on web'),
+                              ),
+                            );
+                            return;
+                          }
+                          await FileHistoryService.toggleFavorite(
+                            _pdfFile!.path,
+                          );
+                          setState(() {
+                            _isFavorite = !_isFavorite;
+                          });
+                        },
                 ),
-              ),
-          ],
-        ),
-        elevation: 0,
-        actions: [
-          ThemeSwitcher(compact: true),
-          const SizedBox(width: 4),
-          IconButton(
-            icon: Icon(
-              _isFavorite ? Icons.star : Icons.star_outline,
-              color: _isFavorite ? Colors.amber : null,
+                if (_pdfFile != null)
+                  IconButton(
+                    icon: Icon(
+                      _isNightMode ? Icons.brightness_5 : Icons.brightness_7,
+                    ),
+                    tooltip: _isNightMode ? 'Day Mode' : 'Night Mode',
+                    onPressed: _toggleNightMode,
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.folder_open),
+                  tooltip: 'Open PDF',
+                  onPressed: _pickPdf,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: (_pdfFile == null && _pdfBytes == null)
+                      ? null
+                      : _showMoreMenu,
+                ),
+              ],
             ),
-            tooltip: _isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
-            onPressed: (_pdfFile == null && _pdfBytes == null)
-                ? null
-                : () async {
-                    // Favorites only work on desktop/mobile platforms
-                    if (kIsWeb) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Favorites not available on web'),
-                        ),
-                      );
-                      return;
-                    }
-                    await FileHistoryService.toggleFavorite(_pdfFile!.path);
-                    setState(() {
-                      _isFavorite = !_isFavorite;
-                    });
-                  },
-          ),
-          if (_pdfFile != null)
-            IconButton(
-              icon: Icon(
-                _isNightMode ? Icons.brightness_5 : Icons.brightness_7,
-              ),
-              tooltip: _isNightMode ? 'Day Mode' : 'Night Mode',
-              onPressed: _toggleNightMode,
-            ),
-          IconButton(
-            icon: const Icon(Icons.folder_open),
-            tooltip: 'Open PDF',
-            onPressed: _pickPdf,
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: (_pdfFile == null && _pdfBytes == null)
-                ? null
-                : _showMoreMenu,
-          ),
-        ],
-      ),
       body: (_pdfFile == null && _pdfBytes == null)
           ? Center(
               child: Column(

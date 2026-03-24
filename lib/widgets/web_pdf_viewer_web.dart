@@ -74,6 +74,19 @@ class _WebPdfViewerState extends State<WebPdfViewer> {
           gap: 10px;
           box-shadow: 0 2px 5px rgba(0,0,0,0.1);
           flex-wrap: wrap;
+          justify-content: space-between;
+        }
+        
+        #toolbar-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        #toolbar-right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
         
         .toolbar-btn {
@@ -147,18 +160,21 @@ class _WebPdfViewerState extends State<WebPdfViewer> {
     <body>
       <div id="pdf-container">
         <div id="toolbar">
-          <button id="prev-btn" class="toolbar-btn" title="Previous page">← Prev</button>
-          <button id="next-btn" class="toolbar-btn" title="Next page">Next →</button>
-          <div class="separator"></div>
-          <span id="page-info">Page <span id="page-num">1</span> of <span id="page-count">-</span></span>
-          <div class="separator"></div>
-          <button id="zoom-out-btn" class="toolbar-btn" title="Zoom out">−</button>
-          <input type="text" id="zoom-input" value="100" title="Zoom level">
-          <span style="color: white; font-size: 14px;">%</span>
-          <button id="zoom-in-btn" class="toolbar-btn" title="Zoom in">+</button>
-          <button id="fit-width-btn" class="toolbar-btn" title="Fit to width">Fit Width</button>
-          <button id="fit-page-btn" class="toolbar-btn" title="Fit page">Fit Page</button>
-          <div id="file-name" title="${widget.fileName ?? 'PDF Document'}">📄 ${widget.fileName ?? 'PDF Document'}</div>
+          <div id="toolbar-left">
+            <button id="back-btn" class="toolbar-btn" title="Go back">← Back</button>
+            <div class="separator"></div>
+            <button id="prev-btn" class="toolbar-btn" title="Previous page">← Prev</button>
+            <button id="next-btn" class="toolbar-btn" title="Next page">Next →</button>
+            <div class="separator"></div>
+            <span id="page-info">Page <span id="page-num">1</span> of <span id="page-count">-</span></span>
+          </div>
+          <div id="toolbar-right">
+            <button id="zoom-out-btn" class="toolbar-btn" title="Zoom out">−</button>
+            <input type="text" id="zoom-input" value="100" title="Zoom level">
+            <span style="color: white; font-size: 14px;">%</span>
+            <button id="zoom-in-btn" class="toolbar-btn" title="Zoom in">+</button>
+            <button id="fit-width-btn" class="toolbar-btn" title="Fit to width">Fit</button>
+          </div>
         </div>
         <div id="canvas-container">
           <canvas id="pdf-canvas"></canvas>
@@ -180,13 +196,18 @@ class _WebPdfViewerState extends State<WebPdfViewer> {
         const pageNumSpan = document.getElementById('page-num');
         const pageCountSpan = document.getElementById('page-count');
         const zoomInput = document.getElementById('zoom-input');
+        const backBtn = document.getElementById('back-btn');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
         const zoomOutBtn = document.getElementById('zoom-out-btn');
         const zoomInBtn = document.getElementById('zoom-in-btn');
         const fitWidthBtn = document.getElementById('fit-width-btn');
-        const fitPageBtn = document.getElementById('fit-page-btn');
         const canvasContainer = document.getElementById('canvas-container');
+
+        // Back button functionality
+        backBtn.addEventListener('click', () => {
+          window.history.back();
+        });
 
         // Load PDF from base64
         async function loadPdf() {
@@ -285,19 +306,6 @@ class _WebPdfViewerState extends State<WebPdfViewer> {
           const viewport = page.getViewport({ scale: 1 });
           const containerWidth = canvasContainer.clientWidth - 40;
           scale = containerWidth / viewport.width;
-          updateZoomInput();
-          await renderPage(currentPage);
-        });
-
-        fitPageBtn.addEventListener('click', async () => {
-          fitMode = 'page';
-          const page = await pdfDoc.getPage(currentPage);
-          const viewport = page.getViewport({ scale: 1 });
-          const containerWidth = canvasContainer.clientWidth - 40;
-          const containerHeight = canvasContainer.clientHeight - 40;
-          const scaleX = containerWidth / viewport.width;
-          const scaleY = containerHeight / viewport.height;
-          scale = Math.min(scaleX, scaleY);
           updateZoomInput();
           await renderPage(currentPage);
         });
