@@ -167,17 +167,14 @@ class CertificateService {
   }
 
   static bool _isBinaryDataValid(Uint8List data) {
-    try {
-      if (data.isEmpty) return false;
-      final hasP12Marker =
-          data.length > 3 && data[0] == 0x30 && data[1] == 0x82;
-      final isPemData = String.fromCharCodes(
-        data,
-      ).contains('BEGIN CERTIFICATE');
-      return hasP12Marker || isPemData;
-    } catch (e) {
-      return false;
-    }
+    if (data.isEmpty) return false;
+    // PKCS#12: starts with 0x30 (ASN.1 SEQUENCE)
+    final hasP12Marker = data[0] == 0x30;
+    // PEM: text starts with "-----BEGIN"
+    final isPem =
+        data.length > 10 &&
+        String.fromCharCodes(data.sublist(0, 10)).startsWith('-----BEGIN');
+    return hasP12Marker || isPem;
   }
 
   static String _calculateThumbprint(Uint8List data) {

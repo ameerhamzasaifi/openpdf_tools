@@ -8,20 +8,24 @@ import 'package:openpdf_tools/utils/platform_helper.dart';
 
 class PlatformFileHandler {
   static Future<bool> requestStoragePermission() async {
-    if (!PlatformHelper.isMobile) return true;
+    if (!PlatformHelper.isAndroid) return true;
     try {
-      if (PlatformHelper.isAndroid) {
-        final photoStatus = await Permission.photos.status;
-        final storageStatus = await Permission.storage.status;
-        if (photoStatus.isGranted || storageStatus.isGranted) return true;
-        final storageResult = await Permission.storage.request();
-        final photoResult = await Permission.photos.request();
-        return storageResult.isGranted || photoResult.isGranted;
-      }
+      // Android 13+
+      final photos = await Permission.photos.request();
+      final videos = await Permission.videos.request();
+      if (photos.isGranted || videos.isGranted) return true;
+
+      // Android 10–12
+      final storage = await Permission.storage.request();
+      if (storage.isGranted) return true;
+
+      // Android 11+ scoped storage fallback
+      final manage = await Permission.manageExternalStorage.request();
+      return manage.isGranted;
     } catch (e) {
+      debugPrint('Permission error: $e');
       return false;
     }
-    return true;
   }
 
   static Future<bool> requestMediaPermissions() async {

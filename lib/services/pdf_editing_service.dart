@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
+
 class PdfEditingService {
   static const _platform = MethodChannel('com.openpdf.tools/pdfManipulation');
   static void _checkWebSupport(String operation) {
@@ -12,6 +13,13 @@ class PdfEditingService {
       );
     }
   }
+
+  static Future<String> _ensureOutputPath(String prefix) async {
+    final tempDir = await getTemporaryDirectory();
+    await tempDir.create(recursive: true);
+    return '${tempDir.path}/${prefix}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+  }
+
   static Future<String> addTextToPdf({
     required String inputPath,
     required String text,
@@ -19,12 +27,7 @@ class PdfEditingService {
   }) async {
     _checkWebSupport('PDF text editing');
     try {
-      final tempDir = await getTemporaryDirectory();
-      if (!await tempDir.exists()) {
-        await tempDir.create(recursive: true);
-      }
-      final outputPath =
-          '${tempDir.path}/text_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final outputPath = await _ensureOutputPath('text');
       debugPrint('[PdfEditingService] Adding text to PDF: $inputPath');
       if (Platform.isAndroid) {
         final result = await _platform.invokeMethod<String>('addTextToPdf', {
@@ -45,18 +48,14 @@ class PdfEditingService {
       throw Exception('Failed to add text: $e');
     }
   }
+
   static Future<String> rotatePdf({
     required String inputPath,
     required int angle,
   }) async {
     _checkWebSupport('PDF rotation');
     try {
-      final tempDir = await getTemporaryDirectory();
-      if (!await tempDir.exists()) {
-        await tempDir.create(recursive: true);
-      }
-      final outputPath =
-          '${tempDir.path}/rotated_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final outputPath = await _ensureOutputPath('rotated');
       if (Platform.isAndroid) {
         final result = await _platform.invokeMethod<String>('rotatePdf', {
           'inputPath': inputPath,
@@ -87,18 +86,14 @@ class PdfEditingService {
       throw Exception('Failed to rotate PDF: $e');
     }
   }
+
   static Future<String> cropPdf({
     required String inputPath,
     required List<double> cropBox,
   }) async {
     _checkWebSupport('PDF cropping');
     try {
-      final tempDir = await getTemporaryDirectory();
-      if (!await tempDir.exists()) {
-        await tempDir.create(recursive: true);
-      }
-      final outputPath =
-          '${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final outputPath = await _ensureOutputPath('cropped');
       if (Platform.isAndroid) {
         final result = await _platform.invokeMethod<String>('cropPdf', {
           'inputPath': inputPath,
@@ -118,6 +113,7 @@ class PdfEditingService {
       throw Exception('Failed to crop PDF: $e');
     }
   }
+
   static Future<String> addWatermarkWithPlacement({
     required String inputPath,
     required String text,
@@ -127,12 +123,7 @@ class PdfEditingService {
   }) async {
     _checkWebSupport('PDF watermark');
     try {
-      final tempDir = await getTemporaryDirectory();
-      if (!await tempDir.exists()) {
-        await tempDir.create(recursive: true);
-      }
-      final outputPath =
-          '${tempDir.path}/watermarked_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final outputPath = await _ensureOutputPath('watermarked');
       if (Platform.isAndroid) {
         final result = await _platform.invokeMethod<String>('addWatermark', {
           'inputPath': inputPath,
@@ -151,18 +142,14 @@ class PdfEditingService {
       throw Exception('Failed to add watermark: $e');
     }
   }
+
   static Future<String> changeBackgroundColor({
     required String inputPath,
     required String hexColor,
   }) async {
     _checkWebSupport('PDF background color');
     try {
-      final tempDir = await getTemporaryDirectory();
-      if (!await tempDir.exists()) {
-        await tempDir.create(recursive: true);
-      }
-      final outputPath =
-          '${tempDir.path}/colored_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final outputPath = await _ensureOutputPath('colored');
       if (Platform.isAndroid) {
         final result = await _platform.invokeMethod<String>(
           'changeBackgroundColor',
@@ -182,15 +169,11 @@ class PdfEditingService {
       throw Exception('Failed to change background color: $e');
     }
   }
+
   static Future<String> compressPdf({required String inputPath}) async {
     _checkWebSupport('PDF compression');
     try {
-      final tempDir = await getTemporaryDirectory();
-      if (!await tempDir.exists()) {
-        await tempDir.create(recursive: true);
-      }
-      final outputPath =
-          '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final outputPath = await _ensureOutputPath('compressed');
       if (Platform.isAndroid) {
         final result = await _platform.invokeMethod<String>('compressPdf', {
           'inputPath': inputPath,
@@ -219,6 +202,7 @@ class PdfEditingService {
       throw Exception('Failed to compress PDF: $e');
     }
   }
+
   static Future<int> getPageCount({required String inputPath}) async {
     if (kIsWeb) return 1;
     try {

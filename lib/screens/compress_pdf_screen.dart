@@ -10,11 +10,13 @@ import 'package:openpdf_tools/utils/platform_helper.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:openpdf_tools/widgets/theme_switcher.dart';
 import 'pdf_viewer_screen.dart';
+
 class CompressPdfScreen extends StatefulWidget {
   const CompressPdfScreen({super.key});
   @override
   State<CompressPdfScreen> createState() => _CompressPdfScreenState();
 }
+
 class _CompressPdfScreenState extends State<CompressPdfScreen> {
   static const platform = MethodChannel('com.openpdf.tools/pdfManipulation');
   String? _pdfPath;
@@ -112,6 +114,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
       }
     }
   }
+
   Future<void> compressPdf() async {
     if (_pdfPath == null) return;
     if (kIsWeb) {
@@ -189,7 +192,14 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
       if (mounted) setState(() => _isProcessing = false);
     }
   }
+
   Future<void> _compressPdfAndroid(String outputPath) async {
+    // Ensure output directory exists
+    final dir = File(outputPath).parent;
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+
     try {
       final result = await platform
           .invokeMethod<String>('compressPdf', {
@@ -198,39 +208,32 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
             'quality': _quality,
           })
           .timeout(
-            const Duration(seconds: 120),
-            onTimeout: () => throw TimeoutException(
-              'Android compression timed out after 120 seconds',
-            ),
+            const Duration(seconds: 180), // increase for large files
+            onTimeout: () => throw TimeoutException('Compression timed out'),
           );
+
       if (result == null || result.isEmpty) {
-        throw Exception('Android compression returned null or empty path');
+        throw Exception('Compression returned empty path');
       }
       debugPrint('[CompressPdf] Android compression successful: $result');
-    } on TimeoutException catch (e) {
-      debugPrint('[CompressPdf] Android compression timeout: $e');
-      throw Exception(
-        'PDF compression is taking too long. Please try a smaller file or lower quality.',
-      );
     } on PlatformException catch (e) {
-      debugPrint('[CompressPdf] Android compression failed: ${e.message}');
-      throw Exception('Android compression failed: ${e.message}');
-    } catch (e) {
-      debugPrint('[CompressPdf] Android compression error: $e');
-      throw Exception('Android compression error: $e');
+      throw Exception('Compression failed: ${e.message}\n${e.details}');
     }
   }
+
   Future<void> _compressPdfDesktop(String outputPath) async {
     try {
       final result = await Process.run('gs', [
         '-sDEVICE=pdfwrite',
         '-dCompatibilityLevel=1.4',
-        '-dPDFSETTINGS=/ebook',         '-dPDFSETTINGS=/ebook',
+        '-dPDFSETTINGS=/ebook',
+        '-dPDFSETTINGS=/ebook',
         '-dNOPAUSE',
         '-dQUIET',
         '-dBATCH',
         '-dDetectDuplicateImages',
-        '-r${72 + (_quality - 20) ~/ 2}',         '-r${72 + (_quality - 20) ~/ 2}',
+        '-r${72 + (_quality - 20) ~/ 2}',
+        '-r${72 + (_quality - 20) ~/ 2}',
         '-dCompressFonts=true',
         '-r150x150',
         '-dDownsampleColorImages=true',
@@ -257,6 +260,7 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -339,11 +343,13 @@ class _CompressPdfScreenState extends State<CompressPdfScreen> {
       ),
     );
   }
+
   String _getQualityLabel(int quality) {
     if (quality <= 40) return 'Low (/screen)';
     if (quality <= 60) return 'Medium (/ebook)';
     return 'High (/printer)';
   }
+
   String _getQualityDescription(int quality) {
     if (quality <= 40) {
       return '📱 Screen quality - Smallest file size, suitable for web';

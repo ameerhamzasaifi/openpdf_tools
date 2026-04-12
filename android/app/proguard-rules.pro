@@ -10,6 +10,13 @@
 -keep class org.apache.pdfbox.** { *; }
 -keep class org.apache.fontbox.** { *; }
 -keep class org.apache.commons.logging.** { *; }
+-keep class org.apache.pdfbox.pdmodel.** { *; }
+-keep class org.apache.pdfbox.text.** { *; }
+-keep class org.apache.pdfbox.rendering.** { *; }
+-keepattributes *Annotation*
+-keepattributes Signature
+-dontwarn org.apache.pdfbox.**
+-dontwarn org.apache.fontbox.**
 
 # Suppress warnings about desktop/AWT classes not present on Android
 -dontwarn java.awt.**

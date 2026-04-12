@@ -411,26 +411,29 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
   }
 
   Future<void> _convertToText(String outputPath) async {
-    final outDir = File(outputPath).parent;
-    if (!await outDir.exists()) {
-      await outDir.create(recursive: true);
-    }
+    // On Android, always write to app documents directory
+    String safeOutputPath = outputPath;
     if (Platform.isAndroid) {
-      try {
-        final result = await platform.invokeMethod<String>('extractText', {
-          'inputPath': _selectedPdfPath!,
-          'outputPath': outputPath,
-        });
-        if (result == null || result.isEmpty) {
-          throw Exception('Failed to extract text from PDF');
-        }
-      } catch (e) {
-        throw Exception('Text extraction failed: $e');
+      final dir = await getApplicationDocumentsDirectory();
+      final fileName = path_lib.basename(outputPath);
+      safeOutputPath = '${dir.path}/$fileName';
+    }
+
+    final outDir = File(safeOutputPath).parent;
+    if (!await outDir.exists()) await outDir.create(recursive: true);
+
+    if (Platform.isAndroid) {
+      final result = await platform.invokeMethod<String>('extractText', {
+        'inputPath': _selectedPdfPath!,
+        'outputPath': safeOutputPath,
+      });
+      if (result == null || result.isEmpty) {
+        throw Exception('Text extraction failed');
       }
     } else {
       final result = await Process.run('pdftotext', [
         _selectedPdfPath!,
-        outputPath,
+        safeOutputPath,
       ]);
       if (result.exitCode != 0) {
         throw Exception('Text conversion failed: ${result.stderr}');
@@ -462,20 +465,17 @@ class _ConvertFromPdfScreenState extends State<ConvertFromPdfScreen> {
           imageFormat = 'png';
       }
       if (Platform.isAndroid) {
-        try {
-          final result = await platform
-              .invokeMethod<List<dynamic>>('pdfToImages', {
-                'inputPath': _selectedPdfPath!,
-                'outputDir': imageDir,
-                'format': imageFormat,
-                'quality': 150,
-              });
-          if (result == null || result.isEmpty) {
-            throw Exception('Failed to convert PDF to images');
-          }
-        } catch (e) {
-          throw Exception('Image conversion failed: $e');
-        }
+        final result = await platform.invokeMethod('pdfToImages', {
+          'inputPath': _selectedPdfPath!,
+          'outputDir': imageDir,
+          'format': imageFormat,
+          'quality': 150,
+        });
+
+        // Safely cast — pdfToImages returns List<dynamic>
+        if (result == null) throw Exception('pdfToImages returned null');
+        final paths = (result as List).cast<String>();
+        if (paths.isEmpty) throw Exception('No images generated');
       } else {
         final result = await Process.run('pdftoppm', [
           '-$imageFormat',

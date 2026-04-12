@@ -61,28 +61,35 @@ class PdfManipulationHandler(private val context: Context) {
 
     private fun mergePdfs(call: MethodCall, result: MethodChannel.Result) {
         val inputPaths = call.argument<List<String>>("inputPaths")
-            ?: return result.error("INVALID_ARGS", "inputPaths is required", null)
+            ?: return result.error("INVALID_ARGS", "inputPaths required", null)
         val outputPath = call.argument<String>("outputPath")
-            ?: return result.error("INVALID_ARGS", "outputPath is required", null)
+            ?: return result.error("INVALID_ARGS", "outputPath required", null)
 
         Thread {
             try {
+                ensureParentDir(outputPath)
                 val merged = PDDocument()
                 val sourceDocs = mutableListOf<PDDocument>()
+
                 for (path in inputPaths) {
-                    val doc = Loader.loadPDF(File(path))
+                    val file = File(path)
+                    if (!file.exists()) throw Exception("File not found: $path")
+                    val doc = Loader.loadPDF(file)
                     sourceDocs.add(doc)
-                    for (page in doc.pages.toList()) {
-                        merged.addPage(page)
+                    // Use iterator directly — avoid toList() which can lose pages
+                    val pageIter = doc.pages.iterator()
+                    while (pageIter.hasNext()) {
+                        merged.addPage(pageIter.next())
                     }
                 }
-                ensureParentDir(outputPath)
+
                 merged.save(outputPath)
                 merged.close()
-                for (doc in sourceDocs) { try { doc.close() } catch (_: Exception) {} }
+                sourceDocs.forEach { try { it.close() } catch (_: Exception) {} }
+
                 mainHandler.post { result.success(outputPath) }
             } catch (e: Exception) {
-                mainHandler.post { result.error("MERGE_FAILED", e.message, null) }
+                mainHandler.post { result.error("MERGE_FAILED", e.message, e.stackTraceToString()) }
             }
         }.start()
     }
@@ -91,22 +98,23 @@ class PdfManipulationHandler(private val context: Context) {
 
     private fun splitPdf(call: MethodCall, result: MethodChannel.Result) {
         val inputPath = call.argument<String>("inputPath")
-            ?: return result.error("INVALID_ARGS", "inputPath is required", null)
+            ?: return result.error("INVALID_ARGS", "inputPath required", null)
         val outputDir = call.argument<String>("outputDir")
-            ?: return result.error("INVALID_ARGS", "outputDir is required", null)
+            ?: return result.error("INVALID_ARGS", "outputDir required", null)
 
         Thread {
             try {
+                File(outputDir).mkdirs()
                 val doc = Loader.loadPDF(File(inputPath))
                 val outputPaths = mutableListOf<String>()
                 val ts = System.currentTimeMillis()
-                val pages = doc.pages.toList()
+                val pageCount = doc.numberOfPages
 
-                for (i in pages.indices) {
+                for (i in 0 until pageCount) {
                     val singlePage = PDDocument()
-                    singlePage.addPage(pages[i])
+                    // Import page (safer than direct reference)
+                    singlePage.importPage(doc.getPage(i))
                     val outPath = "$outputDir/page_${i + 1}_$ts.pdf"
-                    ensureParentDir(outPath)
                     singlePage.save(outPath)
                     singlePage.close()
                     outputPaths.add(outPath)
@@ -114,28 +122,27 @@ class PdfManipulationHandler(private val context: Context) {
                 doc.close()
                 mainHandler.post { result.success(outputPaths) }
             } catch (e: Exception) {
-                mainHandler.post { result.error("SPLIT_FAILED", e.message, null) }
+                mainHandler.post { result.error("SPLIT_FAILED", e.message, e.stackTraceToString()) }
             }
         }.start()
     }
 
     private fun splitPdfRange(call: MethodCall, result: MethodChannel.Result) {
-        val inputPath = call.argument<String>("inputPath")
-            ?: return result.error("INVALID_ARGS", "inputPath is required", null)
-        val outputPath = call.argument<String>("outputPath")
-            ?: return result.error("INVALID_ARGS", "outputPath is required", null)
-        val startPage = call.argument<Int>("startPage") ?: 1
-        val endPage = call.argument<Int>("endPage") ?: 1
+        val inputPath  = call.argument<String>("inputPath")  ?: return result.error("INVALID_ARGS","inputPath required",null)
+        val outputPath = call.argument<String>("outputPath") ?: return result.error("INVALID_ARGS","outputPath required",null)
+        val startPage  = call.argument<Int>("startPage") ?: 1
+        val endPage    = call.argument<Int>("endPage")   ?: 1
 
         Thread {
             try {
                 val doc = Loader.loadPDF(File(inputPath))
                 val rangeDoc = PDDocument()
-                val pages = doc.pages.toList()
                 val start = (startPage - 1).coerceAtLeast(0)
-                val end   = (endPage   - 1).coerceAtMost(pages.size - 1)
+                val end   = (endPage   - 1).coerceAtMost(doc.numberOfPages - 1)
 
-                for (i in start..end) { rangeDoc.addPage(pages[i]) }
+                for (i in start..end) {
+                    rangeDoc.importPage(doc.getPage(i))
+                }
                 ensureParentDir(outputPath)
                 rangeDoc.save(outputPath)
                 rangeDoc.close()
